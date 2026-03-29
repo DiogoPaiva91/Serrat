@@ -32,10 +32,13 @@ export function LoginPage() {
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
       {/* MeshGradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0c2d6b] to-[#1a4fc9]" />
       <MeshGradient
         className="absolute inset-0 w-full h-full"
-        colors={["#1e40af", "#2563eb", "#3b82f6", "#60a5fa"]}
-        speed={0.3}
+        colors={["#0a3d91", "#1565c0", "#1e88e5", "#42a5f5"]}
+        speed={0.4}
+        distortion={0.6}
+        swirl={0.15}
       />
 
       {/* Login card - frosted glass */}
