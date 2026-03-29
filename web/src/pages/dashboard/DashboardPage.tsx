@@ -3,26 +3,19 @@ import { StatsCard } from "@/components/shared/StatsCard";
 import { OsChart } from "./OsChart";
 import { ActivityFeed } from "./ActivityFeed";
 import { SlaAlerts } from "./SlaAlerts";
-
-const mockStats = {
-  os_today: 47,
-  os_month: 1248,
-  active_cabins: 19,
-  active_employees: 8,
-};
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export function DashboardPage() {
-  const stats = mockStats;
+  const { data: stats } = useDashboardStats();
+
+  const s = stats || { os_today: 0, os_month: 0, active_cabins: 0, active_employees: 0 };
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total OS Hoje"
-          value={stats.os_today}
-          change="+12% vs ontem"
-          changeType="positive"
+          value={s.os_today}
           icon={ClipboardCheck}
           iconBg="bg-blue-100"
           iconColor="text-blue-600"
@@ -30,9 +23,7 @@ export function DashboardPage() {
         />
         <StatsCard
           title="OS no Mes"
-          value={stats.os_month.toLocaleString("pt-BR")}
-          change="+8% vs mes anterior"
-          changeType="positive"
+          value={s.os_month.toLocaleString("pt-BR")}
           icon={CalendarCheck}
           iconBg="bg-green-100"
           iconColor="text-green-600"
@@ -40,7 +31,7 @@ export function DashboardPage() {
         />
         <StatsCard
           title="Cabines Ativas"
-          value={stats.active_cabins}
+          value={s.active_cabins}
           icon={QrCode}
           iconBg="bg-amber-100"
           iconColor="text-amber-600"
@@ -48,7 +39,7 @@ export function DashboardPage() {
         />
         <StatsCard
           title="Funcionarios Ativos"
-          value={stats.active_employees}
+          value={s.active_employees}
           icon={Users}
           iconBg="bg-purple-100"
           iconColor="text-purple-600"
@@ -56,13 +47,11 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <OsChart />
         <ActivityFeed />
       </div>
 
-      {/* SLA Alerts */}
       <SlaAlerts />
     </div>
   );

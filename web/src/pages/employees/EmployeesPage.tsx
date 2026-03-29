@@ -3,25 +3,10 @@ import { Plus, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeForm } from "@/components/forms/EmployeeForm";
+import { useEmployees } from "@/hooks/useEmployees";
 import { toast } from "sonner";
-
-interface EmployeeItem {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  phone: string;
-  active: boolean;
-  osCount: number;
-}
-
-const initialEmployees: EmployeeItem[] = [
-  { id: "1", name: "Leni Silva", email: "leni@serrat.com", role: "operador", phone: "(13) 99999-1111", active: true, osCount: 1520 },
-  { id: "2", name: "Carlos Santos", email: "carlos@serrat.com", role: "operador", phone: "(13) 99999-2222", active: true, osCount: 980 },
-  { id: "3", name: "Ana Oliveira", email: "ana@serrat.com", role: "gestor", phone: "(13) 99999-3333", active: true, osCount: 45 },
-  { id: "4", name: "Diogo Paiva", email: "diogo@serrat.com", role: "admin", phone: "(13) 99999-4444", active: true, osCount: 12 },
-];
 
 const roleColors: Record<string, string> = {
   admin: "bg-purple-100 text-purple-800",
@@ -36,41 +21,22 @@ const roleLabels: Record<string, string> = {
 };
 
 export function EmployeesPage() {
-  const [employees, setEmployees] = useState(initialEmployees);
+  const { data: employees, isLoading } = useEmployees();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<EmployeeItem | null>(null);
 
-  const filtered = employees.filter(
-    (emp) => emp.name.toLowerCase().includes(search.toLowerCase()) || emp.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = (employees || []).filter(
+    (emp: any) => emp.full_name.toLowerCase().includes(search.toLowerCase()) || emp.email.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleCreate = (data: any) => {
-    const newEmp: EmployeeItem = {
-      id: String(employees.length + 1),
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      role: data.role,
-      active: true,
-      osCount: 0,
-    };
-    setEmployees([...employees, newEmp]);
-    toast.success("Funcionario criado com sucesso!");
-  };
-
-  const handleEdit = (data: any) => {
-    setEmployees(employees.map((emp) => (emp.id === editingItem?.id ? { ...emp, ...data } : emp)));
-    setEditingItem(null);
-    toast.success("Funcionario atualizado!");
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Funcionarios</h2>
-          <p className="text-muted-foreground text-sm mt-1">Gerencie a equipe</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {employees ? `${employees.length} funcionarios` : "Carregando..."}
+          </p>
         </div>
         <Button className="gap-2" onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4" />
@@ -87,54 +53,46 @@ export function EmployeesPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((emp) => (
-          <Card
-            key={emp.id}
-            className="hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => setEditingItem(emp)}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-primary font-bold text-lg">{emp.name.charAt(0)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground truncate">{emp.name}</h3>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${roleColors[emp.role]}`}>
-                      {roleLabels[emp.role]}
-                    </span>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((emp: any) => (
+            <Card key={emp.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-primary font-bold text-lg">{emp.full_name?.charAt(0)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">{emp.email}</p>
-                  <p className="text-sm text-muted-foreground">{emp.phone}</p>
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t">
-                    <div>
-                      <p className="text-xs text-muted-foreground">OS Realizadas</p>
-                      <p className="text-lg font-bold text-foreground">{emp.osCount.toLocaleString()}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground truncate">{emp.full_name}</h3>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${roleColors[emp.role] || ""}`}>
+                        {roleLabels[emp.role] || emp.role}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${emp.active ? "bg-green-500" : "bg-gray-400"}`} />
-                      <span className="text-xs text-muted-foreground">{emp.active ? "Ativo" : "Inativo"}</span>
+                    <p className="text-sm text-muted-foreground mt-0.5">{emp.email}</p>
+                    {emp.phone && <p className="text-sm text-muted-foreground">{emp.phone}</p>}
+                    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t">
+                      <span className={`w-2 h-2 rounded-full ${emp.is_active ? "bg-green-500" : "bg-gray-400"}`} />
+                      <span className="text-xs text-muted-foreground">{emp.is_active ? "Ativo" : "Inativo"}</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+          {filtered.length === 0 && (
+            <p className="col-span-full text-center text-muted-foreground py-12">Nenhum funcionario encontrado</p>
+          )}
+        </div>
+      )}
 
-      {/* Create Modal */}
-      <EmployeeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} />
-
-      {/* Edit Modal */}
-      <EmployeeForm
-        open={!!editingItem}
-        onOpenChange={(open) => !open && setEditingItem(null)}
-        initialData={editingItem ? { name: editingItem.name, email: editingItem.email, phone: editingItem.phone, role: editingItem.role } : null}
-        onSubmit={handleEdit}
-      />
+      <EmployeeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={() => toast.info("Criar funcionario requer Supabase Admin API")} />
     </div>
   );
 }

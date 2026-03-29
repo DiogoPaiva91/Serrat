@@ -3,59 +3,34 @@ import { Building2, Plus, MapPin, Phone, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyForm } from "@/components/forms/CompanyForm";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useQrCodes } from "@/hooks/useQrCodes";
 import { toast } from "sonner";
 
-interface CompanyItem {
-  id: string;
-  name: string;
-  cnpj: string;
-  address: string;
-  city: string;
-  state: string;
-  phone: string;
-  email: string;
-  contractInfo: string;
-  cabins: number;
-  active: boolean;
-}
-
-const initialCompanies: CompanyItem[] = [
-  {
-    id: "1",
-    name: "BRASIL TERMINAL PORTUARIO S/A",
-    cnpj: "02.872.034/0001-69",
-    address: "Av. Engenheiro Augusto Barata, s/n - Porto Alemoa",
-    city: "Santos",
-    state: "SP",
-    phone: "(13) 3344-0000",
-    email: "contato@btp.com.br",
-    contractInfo: "Contrato vigente ate 12/2026",
-    cabins: 19,
-    active: true,
-  },
-];
-
 export function CompaniesPage() {
-  const [companies, setCompanies] = useState(initialCompanies);
+  const { data: companies, isLoading, createMutation, updateMutation } = useCompanies();
+  const { data: qrCodes } = useQrCodes();
   const [formOpen, setFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<CompanyItem | null>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  const getCabinCount = (companyId: string) =>
+    (qrCodes || []).filter((qr: any) => qr.company_id === companyId).length;
 
   const handleCreate = (data: any) => {
-    const newCompany: CompanyItem = {
-      id: String(companies.length + 1),
-      ...data,
-      cabins: 0,
-      active: true,
-    };
-    setCompanies([...companies, newCompany]);
-    toast.success("Empresa criada com sucesso!");
+    createMutation.mutate(
+      { name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo },
+      { onSuccess: () => toast.success("Empresa criada!"), onError: (e: any) => toast.error(e.message) }
+    );
   };
 
   const handleEdit = (data: any) => {
-    setCompanies(companies.map((c) => (c.id === editingItem?.id ? { ...c, ...data } : c)));
-    setEditingItem(null);
-    toast.success("Empresa atualizada!");
+    if (!editingItem) return;
+    updateMutation.mutate(
+      { id: editingItem.id, name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo },
+      { onSuccess: () => { toast.success("Empresa atualizada!"); setEditingItem(null); }, onError: (e: any) => toast.error(e.message) }
+    );
   };
 
   return (
@@ -71,52 +46,64 @@ export function CompaniesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {companies.map((company) => (
-          <Card key={company.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditingItem(company)}>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-blue-600" />
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-52 w-full rounded-lg" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {(companies || []).map((company: any) => (
+            <Card key={company.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditingItem(company)}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Building2 className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">{company.name}</h3>
+                      {company.cnpj && <p className="text-sm text-muted-foreground">CNPJ: {company.cnpj}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">{company.name}</h3>
-                    <p className="text-sm text-muted-foreground">CNPJ: {company.cnpj}</p>
-                  </div>
+                  <Badge variant={company.is_active ? "success" : "secondary"}>
+                    {company.is_active ? "Ativo" : "Inativo"}
+                  </Badge>
                 </div>
-                <Badge variant={company.active ? "success" : "secondary"}>
-                  {company.active ? "Ativo" : "Inativo"}
-                </Badge>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4 shrink-0" />
-                  <span>{company.address}, {company.city} - {company.state}</span>
+                <div className="space-y-2 text-sm">
+                  {company.address && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4 shrink-0" />
+                      <span>{company.address}{company.city ? `, ${company.city}` : ""}{company.state ? ` - ${company.state}` : ""}</span>
+                    </div>
+                  )}
+                  {company.phone && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Phone className="h-4 w-4 shrink-0" />
+                      <span>{company.phone}</span>
+                    </div>
+                  )}
+                  {company.email && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <span>{company.email}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4 shrink-0" />
-                  <span>{company.phone}</span>
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-2xl font-bold text-primary">{getCabinCount(company.id)}</p>
+                  <p className="text-xs text-muted-foreground">Cabines</p>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span>{company.email}</span>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-2xl font-bold text-primary">{company.cabins}</p>
-                <p className="text-xs text-muted-foreground">Cabines</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <CompanyForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} />
       <CompanyForm
         open={!!editingItem}
         onOpenChange={(open) => !open && setEditingItem(null)}
-        initialData={editingItem ? { name: editingItem.name, cnpj: editingItem.cnpj, address: editingItem.address, city: editingItem.city, state: editingItem.state, phone: editingItem.phone, email: editingItem.email, contractInfo: editingItem.contractInfo } : null}
+        initialData={editingItem ? { name: editingItem.name, cnpj: editingItem.cnpj || "", address: editingItem.address || "", city: editingItem.city || "", state: editingItem.state || "", phone: editingItem.phone || "", email: editingItem.email || "", contractInfo: editingItem.contract_info || "" } : null}
         onSubmit={handleEdit}
       />
     </div>
