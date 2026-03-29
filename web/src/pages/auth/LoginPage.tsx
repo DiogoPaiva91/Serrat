@@ -32,13 +32,13 @@ export function LoginPage() {
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
       {/* MeshGradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0c2d6b] to-[#1a4fc9]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#070d1f] to-[#0d1b3e]" />
       <MeshGradient
         className="absolute inset-0 w-full h-full"
-        colors={["#0a3d91", "#1565c0", "#1e88e5", "#42a5f5"]}
-        speed={0.4}
-        distortion={0.6}
-        swirl={0.15}
+        colors={["#0a1628", "#0f2847", "#163d6e", "#1a4a8a"]}
+        speed={0.3}
+        distortion={0.5}
+        swirl={0.1}
       />
 
       {/* Login card - frosted glass */}
@@ -120,7 +120,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 rounded-xl bg-white text-blue-700 font-semibold text-sm shadow-lg hover:shadow-xl hover:bg-white/95 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 group"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-gray-900 font-bold text-sm shadow-lg shadow-amber-500/25 hover:shadow-amber-400/35 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 group"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
