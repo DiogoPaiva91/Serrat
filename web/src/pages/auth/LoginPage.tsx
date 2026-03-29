@@ -86,10 +86,7 @@ export function LoginPage() {
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-amber-400 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-              <span className="text-white font-bold text-2xl">S</span>
-            </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">SERRAT</h1>
+            <img src="/serrat-logo.png" alt="Serrat" className="h-20 w-auto mb-2 drop-shadow-lg" />
             <p className="text-blue-200 text-sm mt-1">Sistema de Gestao de Ordens de Servico</p>
           </div>
 

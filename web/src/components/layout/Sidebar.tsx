@@ -47,9 +47,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center h-16 px-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-amber-400 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
-          </div>
+          <img src="/serrat-logo.png" alt="Serrat" className="h-9 w-auto" />
           {!collapsed && (
             <span className="text-xl font-bold text-sidebar-foreground tracking-tight">
               SERRAT
