@@ -10,8 +10,8 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Relatorios</h2>
-          <p className="text-muted-foreground text-sm mt-1">Analise de desempenho e produtividade</p>
+          <h2 className="text-2xl font-bold text-white/90">Relatorios</h2>
+          <p className="text-white/30 text-sm mt-1">Analise de desempenho e produtividade</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -27,10 +27,10 @@ export function ReportsPage() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard title="Total OS Periodo" value="1.248" icon={BarChart3} iconBg="bg-blue-100" iconColor="text-blue-600" index={0} />
-        <StatsCard title="Media por Dia" value="41.6" icon={Calendar} iconBg="bg-green-100" iconColor="text-green-600" index={1} />
-        <StatsCard title="Cabine Mais Limpa" value="CABINE 07" icon={Trophy} iconBg="bg-amber-100" iconColor="text-amber-600" index={2} />
-        <StatsCard title="Funcionario Destaque" value="LENI" icon={User} iconBg="bg-purple-100" iconColor="text-purple-600" index={3} />
+        <StatsCard title="Total OS Periodo" value="1.248" icon={BarChart3} iconBg="bg-blue-500/15 border border-blue-500/20" iconColor="text-blue-400" index={0} />
+        <StatsCard title="Media por Dia" value="41.6" icon={Calendar} iconBg="bg-emerald-500/15 border border-emerald-500/20" iconColor="text-emerald-400" index={1} />
+        <StatsCard title="Cabine Mais Limpa" value="CABINE 07" icon={Trophy} iconBg="bg-amber-500/15 border border-amber-500/20" iconColor="text-amber-400" index={2} />
+        <StatsCard title="Funcionario Destaque" value="LENI" icon={User} iconBg="bg-purple-500/15 border border-purple-500/20" iconColor="text-purple-400" index={3} />
       </div>
 
       {/* Charts */}

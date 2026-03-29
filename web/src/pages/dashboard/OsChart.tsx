@@ -10,7 +10,6 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Generate mock data for last 30 days
 function generateMockData() {
   const data = [];
   const now = new Date();
@@ -28,9 +27,9 @@ function generateMockData() {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-sm text-primary font-bold">{payload[0].value} OS</p>
+      <div className="glass-strong rounded-lg p-3 shadow-xl">
+        <p className="text-xs font-medium text-white/60">{label}</p>
+        <p className="text-sm text-amber-400 font-bold mt-0.5">{payload[0].value} OS</p>
       </div>
     );
   }
@@ -44,8 +43,8 @@ export function OsChart() {
     <Card className="lg:col-span-2">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">OS por Dia</CardTitle>
-          <span className="text-sm text-muted-foreground">Ultimos 30 dias</span>
+          <CardTitle>OS por Dia</CardTitle>
+          <span className="text-xs text-white/25 font-medium">Ultimos 30 dias</span>
         </div>
       </CardHeader>
       <CardContent>
@@ -54,20 +53,20 @@ export function OsChart() {
             <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorOs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2094f3" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#2094f3" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 10, fill: "rgba(255,255,255,0.2)" }}
                 tickLine={false}
                 axisLine={false}
                 interval={4}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 10, fill: "rgba(255,255,255,0.2)" }}
                 tickLine={false}
                 axisLine={false}
               />
@@ -75,8 +74,8 @@ export function OsChart() {
               <Area
                 type="monotone"
                 dataKey="os"
-                stroke="#2094f3"
-                strokeWidth={2.5}
+                stroke="#f59e0b"
+                strokeWidth={2}
                 fill="url(#colorOs)"
                 animationDuration={1500}
               />

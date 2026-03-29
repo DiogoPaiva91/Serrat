@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
 
 export function LoginPage() {
@@ -24,141 +22,175 @@ export function LoginPage() {
       await signIn(email, password);
       navigate(ROUTES.DASHBOARD);
     } catch (err: any) {
-      setError(err.message || "Erro ao fazer login");
+      setError(err.message || "Credenciais invalidas");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900" />
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#0a0a14]">
+      {/* Background layers */}
+      <div className="absolute inset-0">
+        {/* Deep gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f1e] via-[#0a0a14] to-[#141428]" />
 
-      {/* Animated floating orbs */}
-      <motion.div
-        className="absolute w-96 h-96 rounded-full bg-blue-400/20 blur-3xl"
-        animate={{
-          x: [0, 100, -50, 0],
-          y: [0, -80, 60, 0],
-          scale: [1, 1.2, 0.9, 1],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        style={{ top: "10%", left: "10%" }}
-      />
-      <motion.div
-        className="absolute w-80 h-80 rounded-full bg-indigo-400/15 blur-3xl"
-        animate={{
-          x: [0, -80, 40, 0],
-          y: [0, 60, -100, 0],
-          scale: [1, 0.8, 1.3, 1],
-        }}
-        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-        style={{ bottom: "10%", right: "15%" }}
-      />
-      <motion.div
-        className="absolute w-64 h-64 rounded-full bg-cyan-400/10 blur-3xl"
-        animate={{
-          x: [0, 50, -70, 0],
-          y: [0, -50, 30, 0],
-        }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        style={{ top: "50%", right: "30%" }}
-      />
+        {/* Mesh gradient orbs */}
+        <motion.div
+          className="absolute w-[600px] h-[600px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)",
+            top: "-10%", left: "-5%",
+          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)",
+            bottom: "-15%", right: "-10%",
+          }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-[400px] h-[400px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%)",
+            top: "40%", left: "50%",
+          }}
+          animate={{ x: [-50, 50, -50], y: [-30, 30, -30] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
 
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+        {/* Grid */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+
+        {/* Horizontal glow line */}
+        <motion.div
+          className="absolute h-[1px] w-full top-1/2"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.15), transparent)" }}
+          animate={{ opacity: [0.2, 0.5, 0.2] }}
+          transition={{ duration: 4, repeat: Infinity }}
+        />
+      </div>
 
       {/* Login card */}
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md mx-4"
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-[420px] mx-4"
       >
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
+        <div className="glass-strong rounded-2xl p-8 shadow-2xl">
           {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <img src="/serrat-logo.png" alt="Serrat" className="h-20 w-auto mb-2 drop-shadow-lg" />
-            <p className="text-blue-200 text-sm mt-1">Sistema de Gestao de Ordens de Servico</p>
-          </div>
+          <motion.div
+            className="flex flex-col items-center mb-10"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <img src="/serrat-logo.png" alt="Serrat" className="h-20 w-auto mb-3 drop-shadow-2xl" />
+            <div className="flex items-center gap-2 mt-2">
+              <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-amber-500/50" />
+              <p className="text-xs tracking-[0.3em] uppercase text-amber-400/60 font-medium">
+                Gestao Inteligente
+              </p>
+              <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-amber-500/50" />
+            </div>
+          </motion.div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 group-focus-within:text-amber-400 transition-colors" />
                 <input
                   type="email"
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full h-12 pl-11 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all"
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/25 focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.06] transition-all duration-300 text-sm"
                 />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50" />
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 group-focus-within:text-amber-400 transition-colors" />
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full h-12 pl-11 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all"
+                  className="w-full h-12 pl-12 pr-12 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/25 focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.06] transition-all duration-300 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-300 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg py-2"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 rounded-xl bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold text-base shadow-lg hover:shadow-xl transition-all"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Entrar"
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-red-400/80 text-xs text-center bg-red-500/10 border border-red-500/15 rounded-lg py-2.5 px-3"
+                >
+                  {error}
+                </motion.div>
               )}
-            </Button>
+            </AnimatePresence>
 
-            <div className="text-center">
-              <a
-                href={ROUTES.FORGOT_PASSWORD}
-                className="text-sm text-blue-200 hover:text-white transition-colors"
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-sm shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
               >
-                Esqueceu sua senha?
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    Entrar
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="flex items-center justify-between pt-2"
+            >
+              <a href={ROUTES.FORGOT_PASSWORD} className="text-xs text-white/30 hover:text-amber-400/60 transition-colors">
+                Esqueceu a senha?
               </a>
-            </div>
+              <span className="text-xs text-white/15">v2.0</span>
+            </motion.div>
           </form>
         </div>
+
+        {/* Bottom branding */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="text-center text-[10px] text-white/15 mt-6 tracking-wider"
+        >
+          SERRAT LOGISTICA &amp; LOCACAO &bull; DESDE 1987
+        </motion.p>
       </motion.div>
     </div>
   );

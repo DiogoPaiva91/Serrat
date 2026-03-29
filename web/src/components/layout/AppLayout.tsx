@@ -15,14 +15,12 @@ export function AppLayout() {
       />
       <div
         className={cn(
-          "transition-all duration-300",
+          "transition-all duration-300 min-h-screen",
           sidebarCollapsed ? "ml-20" : "ml-66"
         )}
       >
-        <Header
-          onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        <main className="p-6">
+        <Header onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <main className="p-6 bg-grid-pattern min-h-[calc(100vh-64px)]">
           <Outlet />
         </main>
       </div>
