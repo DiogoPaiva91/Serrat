@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { ROUTES } from "@/lib/constants";
+import { ParticleBackground } from "@/components/shared/ParticleBackground";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,51 +31,9 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#0a0a14]">
-      {/* Background layers */}
-      <div className="absolute inset-0">
-        {/* Deep gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f1e] via-[#0a0a14] to-[#141428]" />
-
-        {/* Mesh gradient orbs */}
-        <motion.div
-          className="absolute w-[600px] h-[600px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)",
-            top: "-10%", left: "-5%",
-          }}
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute w-[500px] h-[500px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)",
-            bottom: "-15%", right: "-10%",
-          }}
-          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute w-[400px] h-[400px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%)",
-            top: "40%", left: "50%",
-          }}
-          animate={{ x: [-50, 50, -50], y: [-30, 30, -30] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Grid */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-
-        {/* Horizontal glow line */}
-        <motion.div
-          className="absolute h-[1px] w-full top-1/2"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.15), transparent)" }}
-          animate={{ opacity: [0.2, 0.5, 0.2] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        />
-      </div>
+      {/* WebGL Particle Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f1e] via-[#0a0a14] to-[#141428]" />
+      <ParticleBackground />
 
       {/* Login card */}
       <motion.div
