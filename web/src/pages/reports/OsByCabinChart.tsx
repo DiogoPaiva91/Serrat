@@ -9,9 +9,9 @@ const data = Array.from({ length: 19 }, (_, i) => ({
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="glass-strong rounded-lg p-3 shadow-xl">
-        <p className="text-xs text-white/60">{label}</p>
-        <p className="text-sm text-amber-400 font-bold">{payload[0].value} OS</p>
+      <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-3">
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-sm text-blue-600 font-bold">{payload[0].value} OS</p>
       </div>
     );
   }
@@ -26,13 +26,13 @@ export function OsByCabinChart() {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.04)" />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.2)" }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="cabin" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }} tickLine={false} axisLine={false} width={55} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+              <XAxis type="number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="cabin" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} width={55} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="os" radius={[0, 4, 4, 0]} animationDuration={1200}>
                 {data.map((_, index) => (
-                  <Cell key={index} fill={index < 3 ? "#f59e0b" : index < 7 ? "rgba(245,158,11,0.5)" : "rgba(245,158,11,0.2)"} />
+                  <Cell key={index} fill={index < 3 ? "#2094f3" : index < 7 ? "rgba(32,148,243,0.5)" : "rgba(32,148,243,0.2)"} />
                 ))}
               </Bar>
             </BarChart>

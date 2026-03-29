@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { type LucideIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, type LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
@@ -22,44 +23,39 @@ export function StatsCard({
   icon: Icon,
   iconBg,
   iconColor,
-  glowColor,
   index = 0,
 }: StatsCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
     >
-      <div className={cn(
-        "glass-card rounded-xl p-5 hover:bg-white/[0.06] transition-all duration-300 group cursor-default",
-        glowColor
-      )}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-white/40 uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold text-white/90 mt-2">{value}</p>
-            {change && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className={cn(
-                  "text-xs font-medium px-1.5 py-0.5 rounded-md",
-                  changeType === "positive"
-                    ? "text-emerald-400 bg-emerald-400/10"
-                    : "text-red-400 bg-red-400/10"
-                )}>
-                  {change}
-                </span>
-              </div>
-            )}
+      <Card className="hover:shadow-md transition-shadow duration-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">{title}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+              {change && (
+                <div className="flex items-center gap-1 mt-1">
+                  {changeType === "positive" ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={cn("text-sm", changeType === "positive" ? "text-green-600" : "text-red-600")}>
+                    {change}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center", iconBg)}>
+              <Icon className={cn("h-6 w-6", iconColor)} />
+            </div>
           </div>
-          <div className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
-            iconBg
-          )}>
-            <Icon className={cn("h-5 w-5", iconColor)} />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }

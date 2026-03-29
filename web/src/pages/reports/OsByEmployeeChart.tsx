@@ -11,8 +11,8 @@ const data = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="glass-strong rounded-lg p-3 shadow-xl">
-        <p className="text-xs font-semibold text-white/70 mb-1">{label}</p>
+      <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-3">
+        <p className="text-xs font-semibold text-gray-700 mb-1">{label}</p>
         {payload.map((entry: any, i: number) => (
           <p key={i} className="text-[11px]" style={{ color: entry.color }}>
             {entry.name}: <span className="font-bold">{entry.value}</span>
@@ -32,14 +32,14 @@ export function OsByEmployeeChart() {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.2)" }} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: "#6b7280" }} />
               <Bar dataKey="higienizacao" name="Higienizacao" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="manutencao" name="Manutencao" fill="#f59e0b" stackId="a" />
-              <Bar dataKey="inspecao" name="Inspecao" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="manutencao" name="Manutencao" fill="#2094f3" stackId="a" />
+              <Bar dataKey="inspecao" name="Inspecao" fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>
