@@ -1,9 +1,21 @@
-import { QrCode, Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { QrCodeForm } from "@/components/forms/QrCodeForm";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { toast } from "sonner";
 
-const mockQrCodes = Array.from({ length: 10 }, (_, i) => ({
+interface QrCodeItem {
+  id: string;
+  company: string;
+  address: string;
+  idCodigo: string;
+  idNome: string;
+}
+
+const initialQrCodes: QrCodeItem[] = Array.from({ length: 19 }, (_, i) => ({
   id: String(i + 1),
   company: "BRASIL TERMINAL PORTUARIO S/A",
   address: "Brasil Terminal Portuario - Av. Engenheiro Augusto Barata, s/n - Porto Alemoa, Santos - SP",
@@ -12,6 +24,41 @@ const mockQrCodes = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 export function QrCodesPage() {
+  const [qrCodes, setQrCodes] = useState(initialQrCodes);
+  const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<QrCodeItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<QrCodeItem | null>(null);
+
+  const filtered = qrCodes.filter(
+    (qr) =>
+      qr.idCodigo.toLowerCase().includes(search.toLowerCase()) ||
+      qr.idNome.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleCreate = (data: any) => {
+    const newItem: QrCodeItem = {
+      id: String(qrCodes.length + 1),
+      ...data,
+    };
+    setQrCodes([...qrCodes, newItem]);
+    toast.success("QR Code criado com sucesso!");
+  };
+
+  const handleEdit = (data: any) => {
+    setQrCodes(qrCodes.map((qr) => (qr.id === editingItem?.id ? { ...qr, ...data } : qr)));
+    setEditingItem(null);
+    toast.success("QR Code atualizado!");
+  };
+
+  const handleDelete = () => {
+    if (deleteItem) {
+      setQrCodes(qrCodes.filter((qr) => qr.id !== deleteItem.id));
+      toast.success(`${deleteItem.idCodigo} removido!`);
+      setDeleteItem(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -19,29 +66,21 @@ export function QrCodesPage() {
           <h2 className="text-2xl font-bold text-foreground">QR Codes</h2>
           <p className="text-muted-foreground text-sm mt-1">Gerencie os QR Codes das cabines</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4" />
           Adicionar
         </Button>
       </div>
 
-      {/* Search */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por ID Codigo..." className="pl-10" />
-            </div>
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por ID Material..." className="pl-10" />
-            </div>
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar por ID Codigo ou Nome..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -57,7 +96,7 @@ export function QrCodesPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockQrCodes.map((qr) => (
+                {filtered.map((qr) => (
                   <tr key={qr.id} className="border-b hover:bg-muted/30 transition-colors">
                     <td className="p-4 font-medium">{qr.id}</td>
                     <td className="p-4 font-medium">{qr.company}</td>
@@ -69,10 +108,10 @@ export function QrCodesPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-800 hover:bg-green-50">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-800 hover:bg-green-50" onClick={() => { setEditingItem(qr); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50" onClick={() => setDeleteItem(qr)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -82,17 +121,31 @@ export function QrCodesPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between p-4 border-t">
-            <p className="text-sm text-muted-foreground">Pagina 1 de 2</p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>Anterior</Button>
-              <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">1</Button>
-              <Button variant="outline" size="sm">2</Button>
-              <Button variant="outline" size="sm">Proximo</Button>
-            </div>
+          <div className="p-4 border-t text-sm text-muted-foreground">
+            {filtered.length} de {qrCodes.length} QR Codes
           </div>
         </CardContent>
       </Card>
+
+      {/* Create Modal */}
+      <QrCodeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} />
+
+      {/* Edit Modal */}
+      <QrCodeForm
+        open={!!editingItem}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+        initialData={editingItem}
+        onSubmit={handleEdit}
+      />
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteItem}
+        onOpenChange={(open) => !open && setDeleteItem(null)}
+        title="Excluir QR Code"
+        description={`Tem certeza que deseja excluir ${deleteItem?.idCodigo}?`}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

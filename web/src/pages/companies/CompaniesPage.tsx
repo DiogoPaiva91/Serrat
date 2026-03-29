@@ -1,9 +1,26 @@
+import { useState } from "react";
 import { Building2, Plus, MapPin, Phone, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CompanyForm } from "@/components/forms/CompanyForm";
+import { toast } from "sonner";
 
-const mockCompanies = [
+interface CompanyItem {
+  id: string;
+  name: string;
+  cnpj: string;
+  address: string;
+  city: string;
+  state: string;
+  phone: string;
+  email: string;
+  contractInfo: string;
+  cabins: number;
+  active: boolean;
+}
+
+const initialCompanies: CompanyItem[] = [
   {
     id: "1",
     name: "BRASIL TERMINAL PORTUARIO S/A",
@@ -13,12 +30,34 @@ const mockCompanies = [
     state: "SP",
     phone: "(13) 3344-0000",
     email: "contato@btp.com.br",
+    contractInfo: "Contrato vigente ate 12/2026",
     cabins: 19,
     active: true,
   },
 ];
 
 export function CompaniesPage() {
+  const [companies, setCompanies] = useState(initialCompanies);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<CompanyItem | null>(null);
+
+  const handleCreate = (data: any) => {
+    const newCompany: CompanyItem = {
+      id: String(companies.length + 1),
+      ...data,
+      cabins: 0,
+      active: true,
+    };
+    setCompanies([...companies, newCompany]);
+    toast.success("Empresa criada com sucesso!");
+  };
+
+  const handleEdit = (data: any) => {
+    setCompanies(companies.map((c) => (c.id === editingItem?.id ? { ...c, ...data } : c)));
+    setEditingItem(null);
+    toast.success("Empresa atualizada!");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -26,15 +65,15 @@ export function CompaniesPage() {
           <h2 className="text-2xl font-bold text-foreground">Empresas</h2>
           <p className="text-muted-foreground text-sm mt-1">Gerencie as empresas clientes</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4" />
           Nova Empresa
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {mockCompanies.map((company) => (
-          <Card key={company.id} className="hover:shadow-md transition-shadow cursor-pointer">
+        {companies.map((company) => (
+          <Card key={company.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditingItem(company)}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -50,7 +89,6 @@ export function CompaniesPage() {
                   {company.active ? "Ativo" : "Inativo"}
                 </Badge>
               </div>
-
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4 shrink-0" />
@@ -65,17 +103,22 @@ export function CompaniesPage() {
                   <span>{company.email}</span>
                 </div>
               </div>
-
-              <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{company.cabins}</p>
-                  <p className="text-xs text-muted-foreground">Cabines</p>
-                </div>
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-2xl font-bold text-primary">{company.cabins}</p>
+                <p className="text-xs text-muted-foreground">Cabines</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <CompanyForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} />
+      <CompanyForm
+        open={!!editingItem}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+        initialData={editingItem ? { name: editingItem.name, cnpj: editingItem.cnpj, address: editingItem.address, city: editingItem.city, state: editingItem.state, phone: editingItem.phone, email: editingItem.email, contractInfo: editingItem.contractInfo } : null}
+        onSubmit={handleEdit}
+      />
     </div>
   );
 }
