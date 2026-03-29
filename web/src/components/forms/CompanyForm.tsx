@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,17 +24,23 @@ interface CompanyFormProps {
   onSubmit: (data: CompanyFormData) => void;
 }
 
+const emptyForm: CompanyFormData = { name: "", cnpj: "", address: "", city: "", state: "SP", phone: "", email: "", contractInfo: "" };
+
 export function CompanyForm({ open, onOpenChange, initialData, onSubmit }: CompanyFormProps) {
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<CompanyFormData>(
-    initialData || { name: "", cnpj: "", address: "", city: "", state: "SP", phone: "", email: "", contractInfo: "" }
-  );
+  const [form, setForm] = useState<CompanyFormData>(emptyForm);
+
+  useEffect(() => {
+    if (open) {
+      setForm(initialData || emptyForm);
+    }
+  }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 500));
     onSubmit(form);
     setLoading(false);
     onOpenChange(false);

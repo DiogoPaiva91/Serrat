@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ interface EmployeeFormData {
   email: string;
   phone: string;
   role: string;
+  password?: string;
 }
 
 interface EmployeeFormProps {
@@ -18,23 +19,30 @@ interface EmployeeFormProps {
   onOpenChange: (open: boolean) => void;
   initialData?: EmployeeFormData | null;
   onSubmit: (data: EmployeeFormData) => void;
+  loading?: boolean;
 }
 
-export function EmployeeForm({ open, onOpenChange, initialData, onSubmit }: EmployeeFormProps) {
+const emptyForm: EmployeeFormData = { name: "", email: "", phone: "", role: "operador", password: "" };
+
+export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loading: externalLoading }: EmployeeFormProps) {
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<EmployeeFormData>(
-    initialData || { name: "", email: "", phone: "", role: "operador" }
-  );
+  const [form, setForm] = useState<EmployeeFormData>(emptyForm);
+
+  useEffect(() => {
+    if (open) {
+      setForm(initialData || emptyForm);
+    }
+  }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
     onSubmit(form);
     setLoading(false);
-    onOpenChange(false);
   };
+
+  const isLoading = loading || externalLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,7 +50,7 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit }: Empl
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Funcionario" : "Novo Funcionario"}</DialogTitle>
           <DialogDescription>
-            {isEditing ? "Atualize as informacoes do funcionario." : "Cadastre um novo funcionario."}
+            {isEditing ? "Atualize as informacoes do funcionario." : "Cadastre um novo funcionario no sistema."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,6 +62,12 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit }: Empl
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           </div>
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input id="password" type="password" placeholder="Minimo 6 caracteres" value={form.password || ""} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!isEditing} />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
@@ -70,8 +84,8 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit }: Empl
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {isEditing ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>

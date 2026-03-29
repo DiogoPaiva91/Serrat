@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeForm } from "@/components/forms/EmployeeForm";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const roleColors: Record<string, string> = {
@@ -21,13 +23,68 @@ const roleLabels: Record<string, string> = {
 };
 
 export function EmployeesPage() {
-  const { data: employees, isLoading } = useEmployees();
+  const { profile } = useAuth();
+  const { data: employees, isLoading, refetch } = useEmployees();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [creating, setCreating] = useState(false);
 
   const filtered = (employees || []).filter(
     (emp: any) => emp.full_name.toLowerCase().includes(search.toLowerCase()) || emp.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreate = async (data: any) => {
+    if (!data.password || data.password.length < 6) {
+      toast.error("Senha deve ter no minimo 6 caracteres");
+      return;
+    }
+    setCreating(true);
+    try {
+      // Sign up new user via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: { data: { full_name: data.name } },
+      });
+      if (authError) throw authError;
+
+      // Update profile with role and company
+      if (authData.user) {
+        await supabase.from("profiles").update({
+          full_name: data.name,
+          phone: data.phone || null,
+          role: data.role,
+          company_id: profile?.company_id,
+        }).eq("id", authData.user.id);
+      }
+
+      toast.success(`${data.name} cadastrado com sucesso!`);
+      setFormOpen(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar funcionario");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleEdit = async (data: any) => {
+    if (!editingItem) return;
+    try {
+      const { error } = await supabase.from("profiles").update({
+        full_name: data.name,
+        phone: data.phone || null,
+        role: data.role,
+      }).eq("id", editingItem.id);
+      if (error) throw error;
+      toast.success("Funcionario atualizado!");
+      setEditingItem(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -55,14 +112,12 @@ export function EmployeesPage() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-lg" />
-          ))}
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((emp: any) => (
-            <Card key={emp.id} className="hover:shadow-md transition-shadow">
+            <Card key={emp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditingItem(emp)}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -92,7 +147,13 @@ export function EmployeesPage() {
         </div>
       )}
 
-      <EmployeeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={() => toast.info("Criar funcionario requer Supabase Admin API")} />
+      <EmployeeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} loading={creating} />
+      <EmployeeForm
+        open={!!editingItem}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+        initialData={editingItem ? { name: editingItem.full_name, email: editingItem.email, phone: editingItem.phone || "", role: editingItem.role } : null}
+        onSubmit={handleEdit}
+      />
     </div>
   );
 }

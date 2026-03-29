@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,22 +19,28 @@ interface QrCodeFormProps {
   onSubmit: (data: QrCodeFormData) => void;
 }
 
+const emptyForm: QrCodeFormData = {
+  company: "BRASIL TERMINAL PORTUARIO S/A",
+  address: "Brasil Terminal Portuario - Av. Engenheiro Augusto Barata, s/n - Porto Alemoa, Santos - SP",
+  idCodigo: "",
+  idNome: "WC BTP",
+};
+
 export function QrCodeForm({ open, onOpenChange, initialData, onSubmit }: QrCodeFormProps) {
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<QrCodeFormData>(
-    initialData || {
-      company: "BRASIL TERMINAL PORTUARIO S/A",
-      address: "Brasil Terminal Portuario - Av. Engenheiro Augusto Barata, s/n - Porto Alemoa, Santos - SP",
-      idCodigo: "",
-      idNome: "WC BTP",
+  const [form, setForm] = useState<QrCodeFormData>(emptyForm);
+
+  useEffect(() => {
+    if (open) {
+      setForm(initialData || emptyForm);
     }
-  );
+  }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 500));
     onSubmit(form);
     setLoading(false);
     onOpenChange(false);
@@ -61,7 +67,7 @@ export function QrCodeForm({ open, onOpenChange, initialData, onSubmit }: QrCode
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="idCodigo">ID Codigo</Label>
-              <Input id="idCodigo" placeholder="CABINE 01" value={form.idCodigo} onChange={(e) => setForm({ ...form, idCodigo: e.target.value })} required />
+              <Input id="idCodigo" placeholder="CABINE 20" value={form.idCodigo} onChange={(e) => setForm({ ...form, idCodigo: e.target.value })} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="idNome">ID Nome</Label>
