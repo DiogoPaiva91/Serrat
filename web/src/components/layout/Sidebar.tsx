@@ -8,6 +8,7 @@ import {
   Building2,
   BarChart3,
   LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { ROUTES } from "@/lib/constants";
@@ -21,7 +22,7 @@ const navItems = [
   { path: ROUTES.REPORTS, label: "Relatorios", icon: BarChart3 },
 ];
 
-export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
+export function Sidebar({ collapsed }: { collapsed?: boolean; onToggle?: () => void }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -31,48 +32,60 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
   };
 
   return (
-    <div className={cn(
-      "h-screen bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-0 z-50 transition-all duration-300",
-      collapsed ? "w-20" : "w-64"
-    )}>
+    <aside
+      className={cn(
+        "h-screen bg-card border-r border-border flex flex-col fixed left-0 top-0 z-50 transition-all duration-300",
+        collapsed ? "w-20" : "w-[260px]"
+      )}
+    >
       {/* Logo */}
-      <div className="py-5 border-b border-sidebar-border flex justify-center items-center">
-        <img src="/serrat-logo.png" alt="Serrat" className={cn("h-auto transition-all", collapsed ? "w-12" : "w-36")} />
+      <div className="py-6 border-b border-border flex justify-center items-center">
+        <img
+          src="/serrat-logo.png"
+          alt="Serrat"
+          className={cn("h-auto transition-all", collapsed ? "w-10" : "w-36")}
+        />
       </div>
 
-      {/* User info */}
+      {/* User */}
       {profile && !collapsed && (
-        <div className="px-4 py-4 border-b border-sidebar-border">
+        <div className="px-5 py-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-sm">{profile.full_name?.charAt(0).toUpperCase()}</span>
+            <div className="w-11 h-11 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+              <span className="text-primary font-bold text-base">
+                {profile.full_name?.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{profile.full_name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground truncate">
+                {profile.full_name}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {profile.email}
+              </p>
             </div>
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto pt-6 pb-6">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink key={item.path} to={item.path}>
             {({ isActive }) => (
               <div
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-all cursor-pointer relative overflow-hidden",
+                  "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl mb-1 transition-all duration-150 cursor-pointer",
                   isActive
-                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25"
-                    : "text-sidebar-foreground hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-600 hover:text-white hover:shadow-md hover:shadow-amber-500/20"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                <item.icon className={cn("h-[18px] w-[18px] shrink-0", isActive && "text-primary")} />
+                {!collapsed && <span>{item.label}</span>}
+                {isActive && !collapsed && (
+                  <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary/60" />
                 )}
-                <item.icon className={cn("h-5 w-5 relative z-10 shrink-0", isActive ? "text-white" : "text-muted-foreground group-hover:text-white")} />
-                {!collapsed && <span className="relative z-10">{item.label}</span>}
               </div>
             )}
           </NavLink>
@@ -80,15 +93,15 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="px-3 py-4 border-t border-border">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 w-full text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
+          className="flex items-center gap-3 px-3 py-2.5 w-full text-sm font-medium text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
         >
-          <LogOut className="h-5 w-5" />
-          {!collapsed && "Sair do Sistema"}
+          <LogOut className="h-[18px] w-[18px]" />
+          {!collapsed && "Sair da conta"}
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
