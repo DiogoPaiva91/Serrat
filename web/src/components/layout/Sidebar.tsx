@@ -51,8 +51,11 @@ export function Sidebar({ collapsed }: { collapsed?: boolean; onToggle?: () => v
       {profile && !collapsed && (
         <div className="px-5 py-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-base">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "rgba(245, 158, 11, 0.12)" }}
+            >
+              <span className="font-bold text-base" style={{ color: "#f59e0b" }}>
                 {profile.full_name?.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -68,23 +71,40 @@ export function Sidebar({ collapsed }: { collapsed?: boolean; onToggle?: () => v
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Navigation - Nookpet style */}
+      <nav className="flex-1 overflow-y-auto" style={{ padding: "16px 12px" }}>
         {navItems.map((item) => (
           <NavLink key={item.path} to={item.path}>
             {({ isActive }) => (
               <div
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl mb-1 transition-all duration-150 cursor-pointer",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
+                className="flex items-center cursor-pointer transition-all duration-150"
+                style={{
+                  gap: 12,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  marginBottom: 4,
+                  fontWeight: 500,
+                  fontSize: 14,
+                  background: isActive ? "rgba(245, 158, 11, 0.08)" : "transparent",
+                  color: isActive ? "#fbbf24" : "hsl(var(--muted-foreground))",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "hsl(var(--accent))";
+                    e.currentTarget.style.color = "hsl(var(--foreground))";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "hsl(var(--muted-foreground))";
+                  }
+                }}
               >
-                <item.icon className={cn("h-[18px] w-[18px] shrink-0", isActive && "text-primary")} />
+                <item.icon size={18} className="shrink-0" />
                 {!collapsed && <span>{item.label}</span>}
                 {isActive && !collapsed && (
-                  <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary/60" />
+                  <ChevronRight size={14} style={{ marginLeft: "auto", opacity: 0.6 }} />
                 )}
               </div>
             )}
@@ -93,12 +113,22 @@ export function Sidebar({ collapsed }: { collapsed?: boolean; onToggle?: () => v
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t border-border">
+      <div style={{ padding: "16px 12px", borderTop: "1px solid hsl(var(--border))" }}>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 w-full text-sm font-medium text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
+          className="flex items-center w-full cursor-pointer transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+          style={{
+            gap: 12,
+            padding: "10px 12px",
+            borderRadius: 12,
+            background: "none",
+            border: "none",
+            color: "#EF4444",
+            fontSize: 14,
+            fontWeight: 500,
+          }}
         >
-          <LogOut className="h-[18px] w-[18px]" />
+          <LogOut size={18} />
           {!collapsed && "Sair da conta"}
         </button>
       </div>
