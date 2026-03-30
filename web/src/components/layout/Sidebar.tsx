@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -7,11 +8,8 @@ import {
   Building2,
   BarChart3,
   LogOut,
-  ChevronLeft,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
-import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 
 const navItems = [
@@ -23,12 +21,7 @@ const navItems = [
   { path: ROUTES.REPORTS, label: "Relatorios", icon: BarChart3 },
 ];
 
-interface SidebarProps {
-  collapsed?: boolean;
-  onToggle?: () => void;
-}
-
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -38,76 +31,64 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   };
 
   return (
-    <aside
-      className={cn(
-        "fixed inset-y-0 left-0 z-40 flex flex-col bg-white border-r border-gray-200 shadow-sm transition-all duration-300",
-        collapsed ? "w-20" : "w-66"
-      )}
-    >
+    <div className={cn(
+      "h-screen bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-0 z-50 transition-all duration-300",
+      collapsed ? "w-20" : "w-64"
+    )}>
       {/* Logo */}
-      <div className="flex items-center h-16 px-5 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <img src="/serrat-logo.png" alt="Serrat" className={cn("transition-all", collapsed ? "h-8" : "h-9")} />
-          {!collapsed && (
-            <span className="text-lg font-bold text-gray-900 tracking-tight">SERRAT</span>
-          )}
-        </div>
-        {onToggle && !collapsed && (
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-gray-400 hover:text-gray-600" onClick={onToggle}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        )}
+      <div className="py-5 border-b border-sidebar-border flex justify-center items-center">
+        <img src="/serrat-logo.png" alt="Serrat" className={cn("h-auto transition-all", collapsed ? "w-12" : "w-36")} />
       </div>
 
-      {/* User */}
+      {/* User info */}
       {profile && !collapsed && (
-        <div className="p-4 border-b border-gray-100">
+        <div className="px-4 py-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-              <span className="text-blue-600 font-semibold text-sm">
-                {profile.full_name?.charAt(0).toUpperCase()}
-              </span>
+            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+              <span className="text-primary font-bold text-sm">{profile.full_name?.charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{profile.full_name}</p>
-              <p className="text-xs text-gray-400 capitalize">{profile.role}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{profile.full_name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map(({ path, label, icon: Icon }) => (
-          <NavLink
-            key={path}
-            to={path}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              )
-            }
-          >
-            <Icon className="h-5 w-5 shrink-0" />
-            {!collapsed && <span>{label}</span>}
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto pt-6 pb-6">
+        {navItems.map((item) => (
+          <NavLink key={item.path} to={item.path}>
+            {({ isActive }) => (
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-all cursor-pointer relative overflow-hidden",
+                  isActive
+                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25"
+                    : "text-sidebar-foreground hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-600 hover:text-white hover:shadow-md hover:shadow-amber-500/20"
+                )}
+              >
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                )}
+                <item.icon className={cn("h-5 w-5 relative z-10 shrink-0", isActive ? "text-white" : "text-muted-foreground group-hover:text-white")} />
+                {!collapsed && <span className="relative z-10">{item.label}</span>}
+              </div>
+            )}
           </NavLink>
         ))}
       </nav>
 
       {/* Logout */}
-      <div className="p-3 border-t border-gray-100">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+      <div className="p-4 border-t border-sidebar-border">
+        <button
           onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 w-full text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
         >
           <LogOut className="h-5 w-5" />
-          {!collapsed && <span className="text-sm">Sair</span>}
-        </Button>
+          {!collapsed && "Sair do Sistema"}
+        </button>
       </div>
-    </aside>
+    </div>
   );
 }

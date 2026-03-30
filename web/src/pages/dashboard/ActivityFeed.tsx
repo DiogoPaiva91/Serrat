@@ -18,7 +18,7 @@ export function ActivityFeed() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Atividade Recente</CardTitle>
-          <a href="/ordens-de-servico" className="text-sm text-blue-600 hover:underline">Ver todas</a>
+          <a href="/ordens-de-servico" className="text-sm text-primary hover:underline">Ver todas</a>
         </div>
       </CardHeader>
       <CardContent>
@@ -32,10 +32,10 @@ export function ActivityFeed() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">{activity.cabin}</p>
+                    <p className="text-sm font-medium text-foreground">{activity.cabin}</p>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{activity.type}</Badge>
                   </div>
-                  <p className="text-xs text-gray-500">{activity.employee} - {activity.time}</p>
+                  <p className="text-xs text-muted-foreground">{activity.employee} - {activity.time}</p>
                 </div>
               </div>
             );

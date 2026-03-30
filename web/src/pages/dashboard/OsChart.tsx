@@ -16,9 +16,9 @@ function generateMockData() {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-3">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <p className="text-sm text-blue-600 font-bold">{payload[0].value} OS</p>
+      <div className="bg-popover border border-border rounded-lg shadow-lg p-3">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-sm text-primary font-bold">{payload[0].value} OS</p>
       </div>
     );
   }
@@ -32,7 +32,7 @@ export function OsChart() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle>OS por Dia</CardTitle>
-          <span className="text-xs text-gray-400">Ultimos 30 dias</span>
+          <span className="text-xs text-muted-foreground">Ultimos 30 dias</span>
         </div>
       </CardHeader>
       <CardContent>
@@ -41,15 +41,15 @@ export function OsChart() {
             <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorOs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2094f3" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#2094f3" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={4} />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval={4} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="os" stroke="#2094f3" strokeWidth={2.5} fill="url(#colorOs)" animationDuration={1500} />
+              <Area type="monotone" dataKey="os" stroke="#f59e0b" strokeWidth={2.5} fill="url(#colorOs)" animationDuration={1500} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

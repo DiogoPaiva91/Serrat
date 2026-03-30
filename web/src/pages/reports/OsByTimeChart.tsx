@@ -9,9 +9,9 @@ const data = Array.from({ length: 24 }, (_, i) => ({
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-3">
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm text-blue-600 font-bold">{payload[0].value} OS</p>
+      <div className="bg-popover border border-border rounded-lg shadow-lg p-3">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-sm text-primary font-bold">{payload[0].value} OS</p>
       </div>
     );
   }
@@ -26,11 +26,11 @@ export function OsByTimeChart() {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="hour" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} interval={2} />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="hour" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="os" fill="#2094f3" radius={[4, 4, 0, 0]} animationDuration={1200} fillOpacity={0.7} />
+              <Bar dataKey="os" fill="#f59e0b" radius={[4, 4, 0, 0]} animationDuration={1200} fillOpacity={0.7} />
             </BarChart>
           </ResponsiveContainer>
         </div>

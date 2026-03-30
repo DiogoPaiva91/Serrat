@@ -133,7 +133,7 @@ export function EmployeesPage() {
                     <p className="text-sm text-muted-foreground mt-0.5">{emp.email}</p>
                     {emp.phone && <p className="text-sm text-muted-foreground">{emp.phone}</p>}
                     <div className="flex items-center gap-1.5 mt-3 pt-3 border-t">
-                      <span className={`w-2 h-2 rounded-full ${emp.is_active ? "bg-green-500" : "bg-gray-400"}`} />
+                      <span className={`w-2 h-2 rounded-full ${emp.is_active ? "bg-green-500" : "bg-muted-foreground"}`} />
                       <span className="text-xs text-muted-foreground">{emp.is_active ? "Ativo" : "Inativo"}</span>
                     </div>
                   </div>
