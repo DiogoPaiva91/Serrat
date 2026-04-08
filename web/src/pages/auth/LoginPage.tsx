@@ -22,6 +22,7 @@ export function LoginPage() {
       await signIn(email, password);
       navigate(ROUTES.DASHBOARD);
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Credenciais invalidas");
     } finally {
       setLoading(false);
