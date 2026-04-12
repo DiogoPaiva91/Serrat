@@ -37,6 +37,10 @@
         "backgroundColor": "#2563eb"
       },
       "package": "com.serrat.mobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     }
   }
 }

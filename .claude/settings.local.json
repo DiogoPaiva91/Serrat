@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo:*)",
+      "Bash(pnpm --filter @serrat/mobile add react-native-web@~0.19.13 @expo/metro-runtime)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8081)",
+      "Bash(pnpm --filter web add html5-qrcode)",
+      "Bash(pnpm --filter web build)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pnpm --filter web dev)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/operador/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000)",
+      "Bash(pkill -f vite)",
+      "Bash(pkill -f \"pnpm.*dev\")"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

@@ -13,8 +13,13 @@ import { EmployeesPage } from "@/pages/employees/EmployeesPage";
 import { CompaniesPage } from "@/pages/companies/CompaniesPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
 import { ROUTES } from "@/lib/constants";
+import { OperadorLayout } from "@/pages/operador/OperadorLayout";
+import { OperadorLoginPage } from "@/pages/operador/OperadorLoginPage";
+import { ScannerPage } from "@/pages/operador/ScannerPage";
+import { HistoricoPage } from "@/pages/operador/HistoricoPage";
+import { PerfilPage } from "@/pages/operador/PerfilPage";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, loginPath = ROUTES.LOGIN }: { children: React.ReactNode; loginPath?: string }) {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -25,7 +30,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) return <Navigate to={ROUTES.LOGIN} replace />;
+  if (!session) return <Navigate to={loginPath} replace />;
   return <>{children}</>;
 }
 
@@ -48,6 +53,13 @@ function AppRoutes() {
         <Route path="funcionarios" element={<EmployeesPage />} />
         <Route path="empresas" element={<CompaniesPage />} />
         <Route path="relatorios" element={<ReportsPage />} />
+      </Route>
+      {/* Operador PWA - sem login */}
+      <Route path="/operador" element={<OperadorLayout />}>
+        <Route index element={<Navigate to="/operador/scanner" replace />} />
+        <Route path="scanner" element={<ScannerPage />} />
+        <Route path="historico" element={<HistoricoPage />} />
+        <Route path="perfil" element={<PerfilPage />} />
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
     </Routes>
