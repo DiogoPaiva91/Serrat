@@ -79,7 +79,6 @@ CREATE TABLE work_orders (
   bubble_id TEXT UNIQUE,
   company_id UUID REFERENCES companies(id),
   qr_code_id UUID REFERENCES qr_codes(id),
-  employee_id UUID REFERENCES profiles(id),
   service_type_id UUID REFERENCES service_types(id),
   qr_code_data TEXT,
   id_codigo TEXT,
@@ -99,7 +98,7 @@ CREATE TABLE work_orders (
 
 -- Indexes
 CREATE INDEX idx_work_orders_company ON work_orders(company_id);
-CREATE INDEX idx_work_orders_employee ON work_orders(employee_id);
+CREATE INDEX idx_work_orders_employee ON work_orders(responsible_name);
 CREATE INDEX idx_work_orders_qr_code ON work_orders(qr_code_id);
 CREATE INDEX idx_work_orders_completed ON work_orders(completed_at DESC);
 CREATE INDEX idx_work_orders_date_range ON work_orders(company_id, completed_at DESC);

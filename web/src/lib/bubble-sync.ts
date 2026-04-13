@@ -53,13 +53,6 @@ export async function getServiceTypes(): Promise<RelOption[]> {
   } catch { return []; }
 }
 
-export async function getEmployees(): Promise<RelOption[]> {
-  if (!isSupabaseConfigured) return [];
-  try {
-    const { data } = await supabase.from("profiles").select("id, full_name").eq("is_active", true).order("full_name");
-    return (data || []).map((r) => ({ id: r.id, name: r.full_name }));
-  } catch { return []; }
-}
 
 export async function getQrCodes(): Promise<(RelOption & { id_codigo: string })[]> {
   if (!isSupabaseConfigured) return [];
@@ -75,8 +68,6 @@ export interface SyncRelationships {
   companyId?: string;
   /** Map: Bubble "Tipo_serviço" value → Supabase service_type UUID */
   serviceTypeMap: Record<string, string>;
-  /** Map: Bubble "Funcionário" name → Supabase profile UUID */
-  employeeMap: Record<string, string>;
   /** Map: Bubble "QR CODE" cabine part → Supabase qr_code UUID */
   qrCodeMap: Record<string, string>;
   /** Whether to auto-match by name (best effort) */
@@ -85,7 +76,6 @@ export interface SyncRelationships {
 
 export const DEFAULT_RELATIONSHIPS: SyncRelationships = {
   serviceTypeMap: {},
-  employeeMap: {},
   qrCodeMap: {},
   autoMatch: true,
 };
@@ -191,12 +181,6 @@ function mapBubbleToSupabase(
     row.service_type_id = rels.serviceTypeMap[serviceTypeName];
   }
 
-  // Employee FK
-  const employeeName = item["Funcionário"];
-  if (employeeName && rels.employeeMap[employeeName]) {
-    row.employee_id = rels.employeeMap[employeeName];
-  }
-
   // QR Code FK - match by cabine part (before @)
   const qrCode = item["QR CODE"] || "";
   const cabinePart = qrCode.split("@")[0]?.trim();
@@ -247,22 +231,11 @@ export function extractUniqueValues(records: BubbleWorkOrder[]) {
 
 export function buildAutoMatchMaps(
   serviceTypes: RelOption[],
-  employees: RelOption[],
   qrCodes: (RelOption & { id_codigo: string })[],
-): Pick<SyncRelationships, "serviceTypeMap" | "employeeMap" | "qrCodeMap"> {
+): Pick<SyncRelationships, "serviceTypeMap" | "qrCodeMap"> {
   const serviceTypeMap: Record<string, string> = {};
   for (const st of serviceTypes) {
     serviceTypeMap[st.name] = st.id;
-  }
-
-  const employeeMap: Record<string, string> = {};
-  for (const emp of employees) {
-    // Match by lowercase first name or full name
-    employeeMap[emp.name] = emp.id;
-    const firstName = emp.name.split(" ")[0];
-    if (firstName && !employeeMap[firstName]) {
-      employeeMap[firstName] = emp.id;
-    }
   }
 
   const qrCodeMap: Record<string, string> = {};
@@ -270,7 +243,7 @@ export function buildAutoMatchMaps(
     qrCodeMap[qr.id_codigo] = qr.id;
   }
 
-  return { serviceTypeMap, employeeMap, qrCodeMap };
+  return { serviceTypeMap, qrCodeMap };
 }
 
 // ─── Stats ───

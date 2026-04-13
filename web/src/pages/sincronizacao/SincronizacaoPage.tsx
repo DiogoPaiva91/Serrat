@@ -12,7 +12,6 @@ import {
   getLastSyncedDate,
   getCompanies,
   getServiceTypes,
-  getEmployees,
   getQrCodes,
   buildAutoMatchMaps,
   extractUniqueValues,
@@ -170,17 +169,17 @@ export function SincronizacaoPage() {
   const [showRels, setShowRels] = useState(true);
   const [companies, setCompanies] = useState<RelOption[]>([]);
   const [serviceTypesDb, setServiceTypesDb] = useState<RelOption[]>([]);
-  const [employeesDb, setEmployeesDb] = useState<RelOption[]>([]);
+
   const [qrCodesDb, setQrCodesDb] = useState<(RelOption & { id_codigo: string })[]>([]);
 
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [serviceTypeMap, setServiceTypeMap] = useState<Record<string, string>>({});
-  const [employeeMap, setEmployeeMap] = useState<Record<string, string>>({});
+
   const [qrCodeMap, setQrCodeMap] = useState<Record<string, string>>({});
 
   // Unique Bubble values (populated after first fetch)
   const [bubbleUniqueServiceTypes, setBubbleUniqueServiceTypes] = useState<string[]>([]);
-  const [bubbleUniqueEmployees, setBubbleUniqueEmployees] = useState<string[]>([]);
+
   const [bubbleUniqueQrCodes, setBubbleUniqueQrCodes] = useState<string[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
@@ -189,15 +188,14 @@ export function SincronizacaoPage() {
   const loadStats = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const [s, ls, comps, sts, emps, qrs] = await Promise.all([
+      const [s, ls, comps, sts, qrs] = await Promise.all([
         getSyncStats(), getLastSyncedDate(),
-        getCompanies(), getServiceTypes(), getEmployees(), getQrCodes(),
+        getCompanies(), getServiceTypes(), getQrCodes(),
       ]);
       setStats(s);
       setLastSync(ls);
       setCompanies(comps);
       setServiceTypesDb(sts);
-      setEmployeesDb(emps);
       setQrCodesDb(qrs);
       if (comps.length === 1) setSelectedCompanyId(comps[0].id);
     } catch (e) {
@@ -211,22 +209,17 @@ export function SincronizacaoPage() {
 
   // Auto-match when DB data + Bubble data are both available
   const handleAutoMatch = () => {
-    const auto = buildAutoMatchMaps(serviceTypesDb, employeesDb, qrCodesDb);
+    const auto = buildAutoMatchMaps(serviceTypesDb, qrCodesDb);
     // Only set matches for values that exist in Bubble data
     const stMap: Record<string, string> = {};
     for (const st of bubbleUniqueServiceTypes) {
       if (auto.serviceTypeMap[st]) stMap[st] = auto.serviceTypeMap[st];
-    }
-    const empMap: Record<string, string> = {};
-    for (const emp of bubbleUniqueEmployees) {
-      if (auto.employeeMap[emp]) empMap[emp] = auto.employeeMap[emp];
     }
     const qrMap: Record<string, string> = {};
     for (const qr of bubbleUniqueQrCodes) {
       if (auto.qrCodeMap[qr]) qrMap[qr] = auto.qrCodeMap[qr];
     }
     setServiceTypeMap(stMap);
-    setEmployeeMap(empMap);
     setQrCodeMap(qrMap);
   };
 
@@ -240,14 +233,13 @@ export function SincronizacaoPage() {
         if (p.preview && p.preview.length > 0) {
           const unique = extractUniqueValues(p.preview);
           setBubbleUniqueServiceTypes(unique.serviceTypes);
-          setBubbleUniqueEmployees(unique.employees);
-          setBubbleUniqueQrCodes(unique.qrCodes);
+setBubbleUniqueQrCodes(unique.qrCodes);
         }
       },
       abortRef.current.signal,
       limit,
       mapping,
-      { companyId: undefined, serviceTypeMap: {}, employeeMap: {}, qrCodeMap: {}, autoMatch: false },
+      { companyId: undefined, serviceTypeMap: {}, qrCodeMap: {}, autoMatch: false },
     );
     setPreviewLoaded(true);
   };
@@ -258,7 +250,6 @@ export function SincronizacaoPage() {
     const rels: SyncRelationships = {
       companyId: selectedCompanyId || undefined,
       serviceTypeMap,
-      employeeMap,
       qrCodeMap,
       autoMatch: true,
     };
@@ -348,8 +339,10 @@ export function SincronizacaoPage() {
       {previewLoaded && (
         <>
           <div className="rounded-xl overflow-hidden" style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}` }}>
-            <button onClick={() => setShowRels(!showRels)}
-              className="w-full flex items-center justify-between p-5 text-left" style={{ color: c.textTitle }}>
+            <div
+              className="w-full flex items-center justify-between p-5 text-left cursor-pointer"
+              style={{ color: c.textTitle }}
+              onClick={() => setShowRels(!showRels)}>
               <div className="flex items-center gap-3">
                 <Link2 size={20} style={{ color: c.verde }} />
                 <div>
@@ -365,7 +358,7 @@ export function SincronizacaoPage() {
                 </Button>
                 <ArrowRight size={18} style={{ color: c.textMuted, transform: showRels ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }} />
               </div>
-            </button>
+            </div>
 
             {showRels && (
               <div className="px-5 pb-5 space-y-4">
@@ -377,11 +370,6 @@ export function SincronizacaoPage() {
                 <RelMultiMap icon={Wrench} label="Tipos de Servico" color={c.laranja}
                   bubbleValues={bubbleUniqueServiceTypes} supabaseOptions={serviceTypesDb}
                   mapping={serviceTypeMap} onChange={setServiceTypeMap} c={c} />
-
-                {/* Funcionários — multi map */}
-                <RelMultiMap icon={Users} label="Funcionarios" color={c.verde}
-                  bubbleValues={bubbleUniqueEmployees} supabaseOptions={employeesDb}
-                  mapping={employeeMap} onChange={setEmployeeMap} c={c} />
 
                 {/* QR Codes — multi map */}
                 <RelMultiMap icon={QrCode} label="QR Codes (Cabines)" color={c.primary}

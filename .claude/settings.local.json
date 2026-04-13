@@ -40,7 +40,13 @@
       "Bash(node -e \"const d=[];process.stdin.on\\('data',c=>d.push\\(c\\)\\);process.stdin.on\\('end',\\(\\)=>{try{const j=JSON.parse\\(Buffer.concat\\(d\\)\\);console.log\\('OK, results:',j.response.results.length\\)}catch\\(e\\){console.log\\('PARSE ERROR:',Buffer.concat\\(d\\).toString\\(\\).slice\\(0,300\\)\\)}}\\)\")",
       "Bash(curl -s \"https://operation.app.br/version-test/api/1.1/obj/work_orders?limit=5&sort_field=Created%20Date&descending=true\")",
       "Bash(curl -s http://localhost:5001/src/pages/sincronizacao/SincronizacaoPage.tsx)",
-      "Bash(npx --no-install vite build)"
+      "Bash(npx --no-install vite build)",
+      "Bash(node -e \"const d=[];process.stdin.on\\('data',c=>d.push\\(c\\)\\);process.stdin.on\\('end',\\(\\)=>{try{const j=JSON.parse\\(Buffer.concat\\(d\\)\\);console.log\\('OK, results:',j.response.results.length,'remaining:',j.response.remaining\\)}catch\\(e\\){console.log\\('ERROR:',e.message\\)}}\\)\")",
+      "Bash(curl -s http://localhost:5000/src/pages/sincronizacao/SincronizacaoPage.tsx)",
+      "Bash(ls -la /home/runner/workspace/web/.env*)",
+      "Bash(env)",
+      "mcp__supabase__apply_migration",
+      "Bash(curl -s http://localhost:5000)"
     ]
   },
   "enableAllProjectMcpServers": true,
