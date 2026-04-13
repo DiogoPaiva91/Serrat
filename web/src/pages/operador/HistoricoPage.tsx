@@ -1,56 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock, Calendar, RefreshCw } from "lucide-react";
+import { RefreshCw, Inbox } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface WorkOrderRecord {
   id: string;
-  qr_code_data: string;
-  status: string;
+  id_codigo: string;
+  id_nome: string;
+  company_name: string;
+  company_address: string;
   completed_at: string;
-  latitude: number | null;
-  longitude: number | null;
 }
 
-const DEMO_HISTORY: WorkOrderRecord[] = [
-  { id: "1", qr_code_data: "CABINE 14 - WC BTP", status: "concluida", completed_at: new Date().toISOString(), latitude: -23.9618, longitude: -46.3322 },
-  { id: "2", qr_code_data: "CABINE 10 - WC BTP", status: "concluida", completed_at: new Date(Date.now() - 3600000).toISOString(), latitude: -23.9618, longitude: -46.3322 },
-  { id: "3", qr_code_data: "CABINE 12 - WC BTP", status: "concluida", completed_at: new Date(Date.now() - 7200000).toISOString(), latitude: -23.9618, longitude: -46.3322 },
-  { id: "4", qr_code_data: "CABINE 13 - WC BTP", status: "concluida", completed_at: new Date(Date.now() - 10800000).toISOString(), latitude: -23.9618, longitude: -46.3322 },
-  { id: "5", qr_code_data: "CABINE 08 - WC BTP", status: "concluida", completed_at: new Date(Date.now() - 86400000).toISOString(), latitude: -23.9618, longitude: -46.3322 },
-  { id: "6", qr_code_data: "CABINE 07 - WC BTP", status: "concluida", completed_at: new Date(Date.now() - 90000000).toISOString(), latitude: null, longitude: null },
-];
+const P = { yellow: "#eab308", yellowLight: "#facc15", dark: "#1a1a2e", darkAlt: "#0f3460" };
 
 export function HistoricoPage() {
   const [filter, setFilter] = useState<"hoje" | "semana" | "mes">("hoje");
+  const [orders, setOrders] = useState<WorkOrderRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: orders = [], isLoading, refetch } = useQuery<WorkOrderRecord[]>({
-    queryKey: ["operador-historico", filter],
-    queryFn: async () => {
-      if (!isSupabaseConfigured) return DEMO_HISTORY;
-
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (!isSupabaseConfigured) { setOrders([]); setLoading(false); return; }
       const now = new Date();
       let dateFrom: Date;
-      if (filter === "hoje") {
-        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      } else if (filter === "semana") {
-        dateFrom = new Date(now.getTime() - 7 * 86400000);
-      } else {
-        dateFrom = new Date(now.getTime() - 30 * 86400000);
-      }
+      if (filter === "hoje") dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      else if (filter === "semana") dateFrom = new Date(now.getTime() - 7 * 86400000);
+      else dateFrom = new Date(now.getTime() - 30 * 86400000);
 
       const { data, error } = await supabase
         .from("work_orders")
-        .select("id, qr_code_data, status, completed_at, latitude, longitude")
+        .select("id, id_codigo, id_nome, company_name, company_address, completed_at")
         .gte("completed_at", dateFrom.toISOString())
         .order("completed_at", { ascending: false })
         .limit(50);
 
-      if (error) throw error;
-      return data || [];
-    },
-  });
+      if (error) { console.error("[HISTORICO]", error); setOrders([]); }
+      else setOrders(data || []);
+    } catch (err) { console.error("[HISTORICO]", err); setOrders([]); }
+    finally { setLoading(false); }
+  }, [filter]);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   const todayCount = orders.filter((o) => {
     const d = new Date(o.completed_at);
@@ -58,79 +50,104 @@ export function HistoricoPage() {
     return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
   }).length;
 
+  const card: React.CSSProperties = { background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0" };
+
   return (
-    <div className="p-4 space-y-4">
-      {/* Stats */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-slate-900">{todayCount}</p>
-            <p className="text-xs text-slate-500">OS realizadas hoje</p>
-          </div>
-          <button
-            onClick={() => refetch()}
-            className="p-2 text-slate-400 hover:text-slate-600"
-          >
-            <RefreshCw size={18} />
-          </button>
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Stats card */}
+      <div style={{ ...card, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: `3px solid ${P.yellow}` }}>
+        <div>
+          <p style={{ fontSize: 28, fontWeight: 800, color: P.yellow, margin: 0, lineHeight: 1 }}>{todayCount}</p>
+          <p style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, margin: "4px 0 0", textTransform: "uppercase" }}>OS realizadas hoje</p>
         </div>
+        <button onClick={fetchOrders} style={{
+          width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0",
+          background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", color: "#94a3b8",
+        }}>
+          <RefreshCw size={16} />
+        </button>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2">
-        {(["hoje", "semana", "mes"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${
-              filter === f
-                ? "bg-amber-500 text-slate-900"
-                : "bg-white text-slate-500 border border-slate-200"
-            }`}
-          >
-            {f === "hoje" ? "Hoje" : f === "semana" ? "7 dias" : "30 dias"}
-          </button>
-        ))}
+      {/* Filter pills */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {(["hoje", "semana", "mes"] as const).map((f) => {
+          const isActive = filter === f;
+          return (
+            <button key={f} onClick={() => setFilter(f)} style={{
+              flex: 1, padding: "10px 0", borderRadius: 12, fontSize: 12, fontWeight: 700,
+              border: isActive ? "none" : "1px solid #e2e8f0",
+              background: isActive ? `linear-gradient(135deg, ${P.yellowLight}, ${P.yellow})` : "#fff",
+              color: isActive ? "#1a1a1a" : "#64748b",
+              cursor: "pointer", transition: "all .15s",
+              boxShadow: isActive ? "0 4px 12px rgba(234,179,8,0.25)" : "none",
+            }}>
+              {f === "hoje" ? "Hoje" : f === "semana" ? "7 dias" : "30 dias"}
+            </button>
+          );
+        })}
       </div>
 
-      {/* List */}
-      <div className="space-y-2">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar size={40} className="text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">Nenhuma OS neste periodo</p>
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white rounded-xl p-4 border border-slate-200 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
-                <CheckCircle2 size={18} className="text-green-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  {order.qr_code_data}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Clock size={10} className="text-slate-400" />
-                  <span className="text-[11px] text-slate-400">
-                    {formatDate(order.completed_at)}
-                  </span>
-                </div>
-              </div>
-              {order.latitude && (
-                <div className="text-[10px] text-green-500 font-medium">GPS</div>
-              )}
+      {/* Title */}
+      <div style={{ textAlign: "center", padding: "4px 0" }}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: P.yellow, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+          Ordens de Serviço Finalizadas
+        </h3>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
+          <div style={{ width: 32, height: 32, border: `3px solid ${P.yellow}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ) : orders.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 0" }}>
+          <Inbox size={40} style={{ color: "#cbd5e1", margin: "0 auto 12px" }} />
+          <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>Nenhuma OS neste periodo</p>
+        </div>
+      ) : (
+        <div style={{ ...card, overflow: "hidden", padding: 0 }}>
+          {/* Table header */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "85px 1fr 95px",
+            background: `linear-gradient(135deg, ${P.dark}, ${P.darkAlt})`,
+          }}>
+            <div style={{ padding: "10px 12px" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0, lineHeight: 1.3 }}>Data<br />Hora</p>
             </div>
-          ))
-        )}
-      </div>
+            <div style={{ padding: "10px 12px", textAlign: "center" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0, lineHeight: 1.3 }}>Empresa<br /><span style={{ fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Endereco</span></p>
+            </div>
+            <div style={{ padding: "10px 12px", textAlign: "center" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>QR Code</p>
+            </div>
+          </div>
+
+          {/* Rows */}
+          {orders.map((order, i) => (
+            <div key={order.id} style={{
+              display: "grid", gridTemplateColumns: "85px 1fr 95px",
+              borderTop: "1px solid #f1f5f9",
+              background: i % 2 === 0 ? "#fff" : "#fafbfc",
+            }}>
+              <div style={{ padding: "10px 12px" }}>
+                <p style={{ fontSize: 11, color: "#64748b", margin: 0, lineHeight: 1.4, fontFamily: "monospace" }}>{formatDate(order.completed_at)}</p>
+              </div>
+              <div style={{ padding: "10px 12px", textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#171717", margin: 0, lineHeight: 1.3 }}>{order.company_name || "—"}</p>
+                <p style={{ fontSize: 9, color: "#94a3b8", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {order.company_address ? `${order.company_address.substring(0, 35)}...` : "—"}
+                </p>
+              </div>
+              <div style={{ padding: "10px 12px", textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: P.yellow, margin: 0 }}>{order.id_codigo}</p>
+                <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0" }}>{order.id_nome}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

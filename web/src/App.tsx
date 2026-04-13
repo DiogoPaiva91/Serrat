@@ -12,12 +12,15 @@ import { QrCodesPage } from "@/pages/qr-codes/QrCodesPage";
 import { EmployeesPage } from "@/pages/employees/EmployeesPage";
 import { CompaniesPage } from "@/pages/companies/CompaniesPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
+import { TiposDeServicoPage } from "@/pages/tipos-de-servico/TiposDeServicoPage";
+import { SincronizacaoPage } from "@/pages/sincronizacao/SincronizacaoPage";
 import { ROUTES } from "@/lib/constants";
 import { OperadorLayout } from "@/pages/operador/OperadorLayout";
-import { OperadorLoginPage } from "@/pages/operador/OperadorLoginPage";
 import { ScannerPage } from "@/pages/operador/ScannerPage";
 import { HistoricoPage } from "@/pages/operador/HistoricoPage";
-import { PerfilPage } from "@/pages/operador/PerfilPage";
+import { lazy, Suspense } from "react";
+
+const DesignSystemPage = lazy(() => import("@/pages/design-system/DesignSystemPage"));
 
 function ProtectedRoute({ children, loginPath = ROUTES.LOGIN }: { children: React.ReactNode; loginPath?: string }) {
   const { session, loading } = useAuth();
@@ -52,15 +55,26 @@ function AppRoutes() {
         <Route path="qr-codes" element={<QrCodesPage />} />
         <Route path="funcionarios" element={<EmployeesPage />} />
         <Route path="empresas" element={<CompaniesPage />} />
+        <Route path="tipos-de-servico" element={<TiposDeServicoPage />} />
         <Route path="relatorios" element={<ReportsPage />} />
       </Route>
+      {/* Sincronizacao — acessivel sem autenticacao */}
+      <Route path="/sincronizacao" element={<SincronizacaoPage />} />
       {/* Operador PWA - sem login */}
       <Route path="/operador" element={<OperadorLayout />}>
         <Route index element={<Navigate to="/operador/scanner" replace />} />
         <Route path="scanner" element={<ScannerPage />} />
         <Route path="historico" element={<HistoricoPage />} />
-        <Route path="perfil" element={<PerfilPage />} />
       </Route>
+      {/* Design System — acessivel sem autenticacao */}
+      <Route
+        path="/design-system"
+        element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>
+            <DesignSystemPage />
+          </Suspense>
+        }
+      />
       <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
     </Routes>
   );

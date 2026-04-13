@@ -22,7 +22,7 @@ export function useWorkOrders(filters: WorkOrderFilters = {}) {
     queryFn: async () => {
       let query = supabase
         .from("work_orders")
-        .select("*, qr_code:qr_codes(id_codigo, id_nome), employee:profiles(full_name), service_type:service_types(name), company:companies(name, address)", { count: "exact" })
+        .select("*, qr_code:qr_codes(id_codigo, id_nome), employee:profiles(full_name), service_type_rel:service_types(name), company_rel:companies(name, address)", { count: "exact" })
         .order("completed_at", { ascending: false });
 
       if (filters.dateFrom) query = query.gte("completed_at", filters.dateFrom);

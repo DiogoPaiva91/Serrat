@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select-native";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, Plus } from "lucide-react";
 
 interface EmployeeFormData {
   name: string;
@@ -30,9 +30,7 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loadin
   const [form, setForm] = useState<EmployeeFormData>(emptyForm);
 
   useEffect(() => {
-    if (open) {
-      setForm(initialData || emptyForm);
-    }
+    if (open) setForm(initialData || emptyForm);
   }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,50 +44,64 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loadin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Funcionario" : "Novo Funcionario"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Atualize as informacoes do funcionario." : "Cadastre um novo funcionario no sistema."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome Completo</Label>
-            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-          </div>
-          {!isEditing && (
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" placeholder="Minimo 6 caracteres" value={form.password || ""} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!isEditing} />
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden [&>button]:text-white [&>button]:hover:text-white/80">
+        <div className="bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center shrink-0">
+              {isEditing ? <Users className="h-6 w-6 text-yellow-400" /> : <Plus className="h-6 w-6 text-yellow-400" />}
             </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" placeholder="(13) 99999-0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Funcao</Label>
-              <Select id="role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                <option value="operador">Operador</option>
-                <option value="gestor">Gestor</option>
-                <option value="admin">Administrador</option>
-              </Select>
+            <div>
+              <DialogHeader className="p-0 space-y-0">
+                <DialogTitle className="text-white text-lg font-bold">
+                  {isEditing ? "Editar Funcionário" : "Novo Funcionário"}
+                </DialogTitle>
+                <DialogDescription className="text-white/60 text-sm mt-0.5">
+                  {isEditing ? form.name || "Atualize as informações" : "Cadastre um novo funcionário no sistema"}
+                </DialogDescription>
+              </DialogHeader>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isEditing ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+
+        <div className="px-6 pt-5 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome Completo</Label>
+              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+            </div>
+            {!isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input id="password" type="password" placeholder="Minimo 6 caracteres" value={form.password || ""} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!isEditing} />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input id="phone" placeholder="(13) 99999-0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Funcao</Label>
+                <Select id="role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                  <option value="operador">Operador</option>
+                  <option value="gestor">Gestor</option>
+                  <option value="admin">Administrador</option>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                {isEditing ? "Salvar" : "Criar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

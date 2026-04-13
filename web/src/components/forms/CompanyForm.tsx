@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2, Plus } from "lucide-react";
 
 interface CompanyFormData {
   name: string;
@@ -32,9 +32,7 @@ export function CompanyForm({ open, onOpenChange, initialData, onSubmit }: Compa
   const [form, setForm] = useState<CompanyFormData>(emptyForm);
 
   useEffect(() => {
-    if (open) {
-      setForm(initialData || emptyForm);
-    }
+    if (open) setForm(initialData || emptyForm);
   }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,58 +46,72 @@ export function CompanyForm({ open, onOpenChange, initialData, onSubmit }: Compa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Empresa" : "Nova Empresa"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Atualize as informacoes da empresa." : "Cadastre uma nova empresa cliente."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome da Empresa</Label>
-            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cnpj">CNPJ</Label>
-            <Input id="cnpj" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Endereco</Label>
-            <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">Cidade</Label>
-              <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden [&>button]:text-white [&>button]:hover:text-white/80">
+        <div className="bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center shrink-0">
+              {isEditing ? <Building2 className="h-6 w-6 text-yellow-400" /> : <Plus className="h-6 w-6 text-yellow-400" />}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">Estado</Label>
-              <Input id="state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            <div>
+              <DialogHeader className="p-0 space-y-0">
+                <DialogTitle className="text-white text-lg font-bold">
+                  {isEditing ? "Editar Empresa" : "Nova Empresa"}
+                </DialogTitle>
+                <DialogDescription className="text-white/60 text-sm mt-0.5">
+                  {isEditing ? form.name || "Atualize as informações da empresa" : "Cadastre uma nova empresa cliente"}
+                </DialogDescription>
+              </DialogHeader>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+        </div>
+
+        <div className="px-6 pt-5 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <Label htmlFor="name">Nome da Empresa</Label>
+              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Label htmlFor="cnpj">CNPJ</Label>
+              <Input id="cnpj" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contractInfo">Informacoes do Contrato</Label>
-            <Textarea id="contractInfo" placeholder="Detalhes do contrato..." value={form.contractInfo} onChange={(e) => setForm({ ...form, contractInfo: e.target.value })} />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isEditing ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="address">Endereco</Label>
+              <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">Cidade</Label>
+                <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">Estado</Label>
+                <Input id="state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contractInfo">Informacoes do Contrato</Label>
+              <Textarea id="contractInfo" placeholder="Detalhes do contrato..." value={form.contractInfo} onChange={(e) => setForm({ ...form, contractInfo: e.target.value })} />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                {isEditing ? "Salvar" : "Criar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

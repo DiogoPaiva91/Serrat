@@ -2,20 +2,32 @@ import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import { cn } from "@/lib/utils";
+import { SidebarCollapseContext } from "@/hooks/useSidebarCollapse";
 
 export function AppLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarHovering, setSidebarHovering] = useState(false);
+  const sidebarWidth = collapsed ? (sidebarHovering ? 230 : 72) : 230;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      <div className={cn("transition-all duration-300", sidebarCollapsed ? "ml-20" : "ml-[260px]")}>
-        <Header onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        <main className="p-6">
-          <Outlet />
-        </main>
+    <SidebarCollapseContext.Provider value={{ collapsed, setCollapsed }}>
+      <div className="min-h-screen bg-muted/30 dark:bg-[#1A1A1A]">
+        <Sidebar onHoveringChange={setSidebarHovering} />
+        <div
+          className="flex min-h-screen flex-col"
+          style={{
+            paddingLeft: sidebarWidth,
+            transition: "padding-left .25s cubic-bezier(.4,0,.2,1)",
+          }}
+        >
+          <Header />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-muted/30 dark:bg-[#1A1A1A]">
+            <div className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 sm:py-7">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarCollapseContext.Provider>
   );
 }
