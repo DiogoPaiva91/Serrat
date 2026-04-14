@@ -174,14 +174,25 @@ export function EmployeesPage() {
     try {
       const emailChanged = data.email && data.email !== editingItem.email;
 
-      // Email so pode ser alterado pelo proprio usuario (em /perfil)
+      // Email alterado: chama edge function (atualiza auth + profile)
       if (emailChanged) {
-        toast.warning("Email do login so pode ser alterado pelo proprio usuario em Meu Perfil");
-        return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) { toast.error("Sessao expirada"); return; }
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ user_id: editingItem.id, new_email: data.email }),
+        });
+        const r = await res.json();
+        if (!res.ok) throw new Error(r.error || "Erro ao alterar email");
       }
 
       const updates: any = { full_name: data.name, phone: data.phone || null, role: data.role, company_id: data.company_id || null };
-      if (emailChanged) updates.email = data.email;
+      // email já foi atualizado pela edge function; não precisa repetir aqui
       const { error } = await supabase.from("profiles").update(updates).eq("id", editingItem.id);
       if (error) throw error;
       toast.success(emailChanged ? "Usuario atualizado (email alterado no login tambem)" : "Usuario atualizado!");
