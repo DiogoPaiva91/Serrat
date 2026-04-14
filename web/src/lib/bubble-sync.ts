@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 
 const BUBBLE_API_URL =
-  "https://operation.app.br/version-test/api/1.1/obj/work_orders";
+  "https://operation.app.br/api/1.1/obj/work_orders";
 const PAGE_SIZE = 100;
 
 export interface BubbleWorkOrder {
@@ -53,7 +53,6 @@ export async function getServiceTypes(): Promise<RelOption[]> {
   } catch { return []; }
 }
 
-
 export async function getQrCodes(): Promise<(RelOption & { id_codigo: string })[]> {
   if (!isSupabaseConfigured) return [];
   try {
@@ -66,148 +65,32 @@ export async function getQrCodes(): Promise<(RelOption & { id_codigo: string })[
 
 export interface SyncRelationships {
   companyId?: string;
-  /** Map: Bubble "Tipo_serviço" value → Supabase service_type UUID */
   serviceTypeMap: Record<string, string>;
-  /** Map: Bubble "QR CODE" cabine part → Supabase qr_code UUID */
   qrCodeMap: Record<string, string>;
-  /** Whether to auto-match by name (best effort) */
-  autoMatch: boolean;
 }
 
 export const DEFAULT_RELATIONSHIPS: SyncRelationships = {
   serviceTypeMap: {},
   qrCodeMap: {},
-  autoMatch: true,
 };
 
-// ─── Column mapping ───
+// ─── Auto-match ───
 
-export const BUBBLE_FIELDS = [
-  { key: "_id", label: "_id (ID único)" },
-  { key: "id", label: "id (número)" },
-  { key: "Data", label: "Data" },
-  { key: "Created Date", label: "Created Date" },
-  { key: "Modified Date", label: "Modified Date" },
-  { key: "Funcionário", label: "Funcionário" },
-  { key: "QR CODE", label: "QR CODE" },
-  { key: "QR CODE > Cabine", label: "QR CODE > Cabine (antes do @)" },
-  { key: "QR CODE > Local", label: "QR CODE > Local (depois do @)" },
-  { key: "Empresa_Cliente", label: "Empresa_Cliente" },
-  { key: "Empresa", label: "Empresa" },
-  { key: "Tipo_serviço", label: "Tipo_serviço" },
-  { key: "Endereço > address", label: "Endereço > address" },
-  { key: "Endereço > lat", label: "Endereço > lat" },
-  { key: "Endereço > lng", label: "Endereço > lng" },
-] as const;
-
-export const SUPABASE_COLUMNS: { key: string; label: string; required?: boolean }[] = [
-  { key: "bubble_id", label: "bubble_id", required: true },
-  { key: "responsible_name", label: "responsible_name" },
-  { key: "company_name", label: "company_name" },
-  { key: "company_address", label: "company_address" },
-  { key: "service_type", label: "service_type" },
-  { key: "qr_code_data", label: "qr_code_data" },
-  { key: "id_codigo", label: "id_codigo" },
-  { key: "id_nome", label: "id_nome" },
-  { key: "latitude", label: "latitude" },
-  { key: "longitude", label: "longitude" },
-  { key: "completed_at", label: "completed_at" },
-  { key: "created_at", label: "created_at" },
-  { key: "observation", label: "observation" },
-];
-
-export type ColumnMapping = Record<string, string>;
-
-export const DEFAULT_MAPPING: ColumnMapping = {
-  bubble_id: "_id",
-  responsible_name: "Funcionário",
-  company_name: "Empresa_Cliente",
-  company_address: "Endereço > address",
-  service_type: "Tipo_serviço",
-  qr_code_data: "QR CODE",
-  id_codigo: "QR CODE > Cabine",
-  id_nome: "QR CODE > Local",
-  latitude: "Endereço > lat",
-  longitude: "Endereço > lng",
-  completed_at: "Data",
-  created_at: "Created Date",
-};
-
-// ─── Helpers ───
-
-function extractBubbleValue(item: BubbleWorkOrder, bubbleField: string): unknown {
-  switch (bubbleField) {
-    case "_id": return item._id;
-    case "id": return item.id;
-    case "Data": return item.Data;
-    case "Created Date": return item["Created Date"];
-    case "Modified Date": return item["Modified Date"];
-    case "Funcionário": return item["Funcionário"];
-    case "QR CODE": return item["QR CODE"];
-    case "QR CODE > Cabine": return (item["QR CODE"] || "").split("@")[0]?.trim() || null;
-    case "QR CODE > Local": return (item["QR CODE"] || "").split("@")[1]?.trim() || null;
-    case "Empresa_Cliente": return item.Empresa_Cliente;
-    case "Empresa": return item.Empresa;
-    case "Tipo_serviço": return item["Tipo_serviço"]?.[0] || null;
-    case "Endereço > address": return item["Endereço"]?.address || null;
-    case "Endereço > lat": return item["Endereço"]?.lat || null;
-    case "Endereço > lng": return item["Endereço"]?.lng || null;
-    default: return null;
+export function buildAutoMatchMaps(
+  serviceTypes: RelOption[],
+  qrCodes: (RelOption & { id_codigo: string })[],
+): Pick<SyncRelationships, "serviceTypeMap" | "qrCodeMap"> {
+  const serviceTypeMap: Record<string, string> = {};
+  for (const st of serviceTypes) {
+    serviceTypeMap[st.name] = st.id;
   }
+  const qrCodeMap: Record<string, string> = {};
+  for (const qr of qrCodes) {
+    qrCodeMap[qr.id_codigo] = qr.id;
+  }
+  return { serviceTypeMap, qrCodeMap };
 }
 
-function mapBubbleToSupabase(
-  item: BubbleWorkOrder,
-  mapping: ColumnMapping,
-  rels: SyncRelationships,
-) {
-  const row: Record<string, unknown> = {};
-
-  // Apply column mapping (text fields)
-  for (const [supaCol, bubbleField] of Object.entries(mapping)) {
-    if (bubbleField) {
-      row[supaCol] = extractBubbleValue(item, bubbleField) ?? null;
-    }
-  }
-
-  // Apply FK relationships
-  if (rels.companyId) {
-    row.company_id = rels.companyId;
-  }
-
-  // Service type FK
-  const serviceTypeName = item["Tipo_serviço"]?.[0];
-  if (serviceTypeName && rels.serviceTypeMap[serviceTypeName]) {
-    row.service_type_id = rels.serviceTypeMap[serviceTypeName];
-  }
-
-  // QR Code FK - match by cabine part (before @)
-  const qrCode = item["QR CODE"] || "";
-  const cabinePart = qrCode.split("@")[0]?.trim();
-  if (cabinePart && rels.qrCodeMap[cabinePart]) {
-    row.qr_code_id = rels.qrCodeMap[cabinePart];
-  }
-
-  return row;
-}
-
-async function fetchBubblePage(
-  cursor: number,
-  limit: number = PAGE_SIZE,
-  descending: boolean = false,
-): Promise<{
-  results: BubbleWorkOrder[];
-  remaining: number;
-  count: number;
-}> {
-  const url = `${BUBBLE_API_URL}?cursor=${cursor}&limit=${limit}&sort_field=${encodeURIComponent("Created Date")}&descending=${descending}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Bubble API error: ${res.status} ${res.statusText}`);
-  const data = await res.json();
-  return data.response;
-}
-
-/** Extract unique values from Bubble data for relationship matching */
 export function extractUniqueValues(records: BubbleWorkOrder[]) {
   const serviceTypes = new Set<string>();
   const employees = new Set<string>();
@@ -227,23 +110,50 @@ export function extractUniqueValues(records: BubbleWorkOrder[]) {
   };
 }
 
-// ─── Auto-match: build maps by name ───
+// ─── Mapping ───
 
-export function buildAutoMatchMaps(
-  serviceTypes: RelOption[],
-  qrCodes: (RelOption & { id_codigo: string })[],
-): Pick<SyncRelationships, "serviceTypeMap" | "qrCodeMap"> {
-  const serviceTypeMap: Record<string, string> = {};
-  for (const st of serviceTypes) {
-    serviceTypeMap[st.name] = st.id;
+function mapBubbleToSupabase(item: BubbleWorkOrder, rels: SyncRelationships) {
+  const cabine = (item["QR CODE"] || "").split("@")[0]?.trim() || null;
+  const tipoServico = item["Tipo_serviço"]?.[0] || null;
+
+  const row: Record<string, unknown> = {
+    bubble_id: item._id,
+    responsible_name: item["Funcionário"] || null,
+    latitude: item["Endereço"]?.lat || null,
+    longitude: item["Endereço"]?.lng || null,
+    completed_at: item.Data || item["Created Date"],
+    created_at: item["Created Date"],
+  };
+
+  if (rels.companyId) row.company_id = rels.companyId;
+  if (tipoServico && rels.serviceTypeMap[tipoServico]) row.service_type_id = rels.serviceTypeMap[tipoServico];
+  if (cabine && rels.qrCodeMap[cabine]) row.qr_code_id = rels.qrCodeMap[cabine];
+
+  return row;
+}
+
+// ─── Fetch ───
+
+async function fetchBubblePage(
+  cursor: number,
+  limit: number = PAGE_SIZE,
+  descending: boolean = false,
+  year?: number,
+): Promise<{ results: BubbleWorkOrder[]; remaining: number }> {
+  let url = `${BUBBLE_API_URL}?cursor=${cursor}&limit=${limit}&sort_field=${encodeURIComponent("Created Date")}&descending=${descending}`;
+
+  if (year) {
+    const constraints = [
+      { key: "Created Date", constraint_type: "greater than", value: `${year}-01-01T00:00:00.000Z` },
+      { key: "Created Date", constraint_type: "less than", value: `${year + 1}-01-01T00:00:00.000Z` },
+    ];
+    url += `&constraints=${encodeURIComponent(JSON.stringify(constraints))}`;
   }
 
-  const qrCodeMap: Record<string, string> = {};
-  for (const qr of qrCodes) {
-    qrCodeMap[qr.id_codigo] = qr.id;
-  }
-
-  return { serviceTypeMap, qrCodeMap };
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Bubble API error: ${res.status} ${res.statusText}`);
+  const data = await res.json();
+  return data.response;
 }
 
 // ─── Stats ───
@@ -252,13 +162,26 @@ export async function getLastSyncedDate(): Promise<string | null> {
   if (!isSupabaseConfigured) return null;
   try {
     const { data } = await supabase
-      .from("work_orders")
-      .select("completed_at")
+      .from("work_orders").select("completed_at")
       .not("bubble_id", "is", null)
-      .order("completed_at", { ascending: false })
-      .limit(1);
+      .order("completed_at", { ascending: false }).limit(1);
     return data?.[0]?.completed_at || null;
   } catch { return null; }
+}
+
+export async function deleteAllImported(): Promise<{ deleted: number; error?: string }> {
+  if (!isSupabaseConfigured) return { deleted: 0, error: "Supabase não configurado" };
+  try {
+    const { count } = await supabase
+      .from("work_orders").select("*", { count: "exact", head: true })
+      .not("bubble_id", "is", null);
+    const { error } = await supabase
+      .from("work_orders").delete().not("bubble_id", "is", null);
+    if (error) return { deleted: 0, error: error.message };
+    return { deleted: count || 0 };
+  } catch (e) {
+    return { deleted: 0, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export async function getSyncStats(): Promise<{ totalBubble: number; totalImported: number }> {
@@ -266,13 +189,11 @@ export async function getSyncStats(): Promise<{ totalBubble: number; totalImport
   if (isSupabaseConfigured) {
     try {
       const { count } = await supabase
-        .from("work_orders")
-        .select("*", { count: "exact", head: true })
+        .from("work_orders").select("*", { count: "exact", head: true })
         .not("bubble_id", "is", null);
       totalImported = count || 0;
-    } catch { totalImported = 0; }
+    } catch { /* ignore */ }
   }
-
   const res = await fetch(`${BUBBLE_API_URL}?limit=1`);
   const data = await res.json();
   const totalBubble = (data.response.remaining || 0) + (data.response.results?.length || 0);
@@ -281,12 +202,25 @@ export async function getSyncStats(): Promise<{ totalBubble: number; totalImport
 
 // ─── Main sync ───
 
+export async function deleteAllAndResetSequence(): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured) return { error: "Supabase não configurado" };
+  try {
+    const { error } = await supabase.from("work_orders").delete().gte("id", "00000000-0000-0000-0000-000000000000");
+    if (error) return { error: error.message };
+    // Reset order_number sequence so next insert starts at 1
+    await supabase.rpc("reset_work_order_sequence").catch(() => {});
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function syncFromBubble(
   onProgress: (progress: SyncProgress) => void,
   signal?: AbortSignal,
   maxRecords?: number,
-  mapping: ColumnMapping = DEFAULT_MAPPING,
   relationships: SyncRelationships = DEFAULT_RELATIONSHIPS,
+  year?: number,
 ): Promise<SyncProgress> {
   const progress: SyncProgress = {
     total: 0, fetched: 0, imported: 0, skipped: 0, errors: 0,
@@ -302,7 +236,7 @@ export async function syncFromBubble(
     const totalBubble = firstPage.remaining + firstPage.results.length;
     progress.total = maxRecords ? Math.min(maxRecords, totalBubble) : totalBubble;
     progress.message = maxRecords
-      ? `Buscando os ${progress.total.toLocaleString("pt-BR")} registros mais recentes...`
+      ? `Buscando os ${progress.total.toLocaleString("pt-BR")} mais recentes...`
       : `Total: ${progress.total.toLocaleString("pt-BR")} OS no Bubble`;
     onProgress({ ...progress });
 
@@ -317,7 +251,7 @@ export async function syncFromBubble(
 
     progress.message = supabaseReady
       ? `${importedSet.size.toLocaleString("pt-BR")} já importados. Buscando novos...`
-      : "Supabase não configurado — buscando dados do Bubble para preview...";
+      : "Supabase não configurado — preview apenas.";
     onProgress({ ...progress });
 
     let cursor = 0;
@@ -327,7 +261,7 @@ export async function syncFromBubble(
     while (fetched < progress.total) {
       if (signal?.aborted) {
         progress.status = "error";
-        progress.message = "Sincronização cancelada.";
+        progress.message = "Cancelado.";
         onProgress({ ...progress });
         return progress;
       }
@@ -335,7 +269,7 @@ export async function syncFromBubble(
       const batchSize = Math.min(PAGE_SIZE, progress.total - fetched);
       const page = await fetchBubblePage(cursor, batchSize, descending);
       const results = page.results || [];
-      if (results.length === 0) break;
+      if (!results.length) break;
 
       cursor += results.length;
       fetched += results.length;
@@ -345,19 +279,18 @@ export async function syncFromBubble(
       progress.skipped += results.length - newRecords.length;
 
       if (newRecords.length > 0) {
-        const mapped = newRecords.map((r) => mapBubbleToSupabase(r, mapping, relationships));
         allRaw.push(...newRecords);
+        const mapped = newRecords.map((r) => mapBubbleToSupabase(r, relationships));
 
         if (supabaseReady) {
           progress.status = "importing";
           const { error } = await supabase
-            .from("work_orders")
-            .upsert(mapped, { onConflict: "bubble_id" });
+            .from("work_orders").upsert(mapped, { onConflict: "bubble_id" });
 
           if (error) {
             console.error("Supabase upsert error:", error);
             progress.errors += newRecords.length;
-            progress.message = `Erro Supabase: ${error.message}`;
+            progress.message = `Erro: ${error.message}`;
           } else {
             progress.imported += newRecords.length;
             newRecords.forEach((r) => importedSet.add(r._id));
@@ -368,7 +301,7 @@ export async function syncFromBubble(
       }
 
       progress.preview = allRaw;
-      progress.message = `Processados ${progress.fetched.toLocaleString("pt-BR")} de ${progress.total.toLocaleString("pt-BR")} | ${supabaseReady ? "Importados" : "Buscados"}: ${progress.imported.toLocaleString("pt-BR")} | Já existiam: ${progress.skipped.toLocaleString("pt-BR")}`;
+      progress.message = `Processados ${progress.fetched.toLocaleString("pt-BR")} de ${progress.total.toLocaleString("pt-BR")} | Importados: ${progress.imported.toLocaleString("pt-BR")} | Já existiam: ${progress.skipped.toLocaleString("pt-BR")}`;
       onProgress({ ...progress });
 
       await new Promise((r) => setTimeout(r, 200));
@@ -376,9 +309,7 @@ export async function syncFromBubble(
 
     progress.status = "done";
     progress.preview = allRaw;
-    progress.message = supabaseReady
-      ? `Concluído! ${progress.imported.toLocaleString("pt-BR")} importados.`
-      : `Busca concluída! ${progress.imported.toLocaleString("pt-BR")} registros encontrados.`;
+    progress.message = `Concluído! ${progress.imported.toLocaleString("pt-BR")} importados, ${progress.skipped.toLocaleString("pt-BR")} já existiam.`;
     onProgress({ ...progress });
     return progress;
   } catch (err) {

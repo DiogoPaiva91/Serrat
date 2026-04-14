@@ -146,13 +146,7 @@ export function ScannerPage() {
         const payload = {
           qr_code_id: qrRecord?.id ?? null,
           company_id: qrRecord?.company_id ?? null,
-          qr_code_data: `${scannedIdCodigo}|${scannedIdNome}`,
-          id_codigo: scannedIdCodigo,
-          id_nome: scannedIdNome,
-          company_name: scannedCompany,
-          company_address: scannedAddress,
           responsible_name: responsibleName,
-          service_type: serviceTypes.join(", "),
           observation: observation || null,
           latitude: location?.latitude ?? null,
           longitude: location?.longitude ?? null,

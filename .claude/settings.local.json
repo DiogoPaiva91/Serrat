@@ -46,7 +46,13 @@
       "Bash(ls -la /home/runner/workspace/web/.env*)",
       "Bash(env)",
       "mcp__supabase__apply_migration",
-      "Bash(curl -s http://localhost:5000)"
+      "Bash(curl -s http://localhost:5000)",
+      "Bash(curl -s \"https://operation.app.br/api/1.1/obj/work_orders?limit=2&sort_field=Created%20Date&descending=true\")",
+      "Bash(node -e \"const d=[];process.stdin.on\\('data',c=>d.push\\(c\\)\\);process.stdin.on\\('end',\\(\\)=>{try{const j=JSON.parse\\(Buffer.concat\\(d\\)\\);console.log\\('OK, results:',j.response.results.length,'remaining:',j.response.remaining\\)}catch\\(e\\){console.log\\('ERROR:',Buffer.concat\\(d\\).toString\\(\\).slice\\(0,200\\)\\)}}\\)\")",
+      "Bash(curl -s \"https://operation.app.br/api/1.1/obj/work_orders?limit=1&sort_field=Created%20Date&descending=false\")",
+      "Bash(node -e \"const d=[];process.stdin.on\\('data',c=>d.push\\(c\\)\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(Buffer.concat\\(d\\)\\);console.log\\('Mais antigo:', j.response.results[0]?.Data, '| Total:', j.response.remaining + 1\\)}\\)\")",
+      "Bash(curl -s \"https://operation.app.br/api/1.1/obj/work_orders?limit=1&sort_field=Created%20Date&descending=true\")",
+      "Bash(node -e \"const d=[];process.stdin.on\\('data',c=>d.push\\(c\\)\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(Buffer.concat\\(d\\)\\);console.log\\('Mais recente:', j.response.results[0]?.Data\\)}\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

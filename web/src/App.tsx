@@ -57,9 +57,8 @@ function AppRoutes() {
         <Route path="empresas" element={<CompaniesPage />} />
         <Route path="tipos-de-servico" element={<TiposDeServicoPage />} />
         <Route path="relatorios" element={<ReportsPage />} />
+        <Route path="sincronizacao" element={<SincronizacaoPage />} />
       </Route>
-      {/* Sincronizacao — acessivel sem autenticacao */}
-      <Route path="/sincronizacao" element={<SincronizacaoPage />} />
       {/* Operador PWA - sem login */}
       <Route path="/operador" element={<OperadorLayout />}>
         <Route index element={<Navigate to="/operador/scanner" replace />} />

@@ -74,7 +74,7 @@ export function WorkOrdersPage() {
   const handleExportCsv = () => {
     const headers = "No,Data,Empresa,Funcionario,Tipo Servico,QR Code\n";
     const rows = orders.map((o: any) =>
-      `${o.order_number},${formatDate(o.completed_at)},${o.company_rel?.name || o.company_name || ""},${o.employee?.full_name || o.responsible_name || ""},${o.service_type_rel?.name || o.service_type || ""},${o.qr_code?.id_codigo || o.id_codigo || ""} ${o.qr_code?.id_nome || o.id_nome || ""}`.trim()
+      `${o.order_number},${formatDate(o.completed_at)},${o.company_rel?.name || ""},${o.responsible_name || ""},${o.service_type_rel?.name || ""},${o.qr_code?.id_codigo || ""} ${o.qr_code?.id_nome || ""}`.trim()
     ).join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -358,8 +358,8 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
   const [configTab, setConfigTab] = useState<"colunas" | "densidade" | "aparencia">("colunas");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [visibleCols, setVisibleCols] = useState<Set<string>>(new Set(ALL_COLUMNS.map(c => c.id)));
-  const [sortCol, setSortCol] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortCol, setSortCol] = useState<string | null>("data");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [appearance, setAppearance] = useState({ zebra: true, verticalBorders: false, stickyHeader: true, wrapText: false });
   const configRef = useRef<HTMLDivElement>(null);
 
@@ -376,6 +376,31 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
   const toggleSel = (id: string) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
   const toggleAll = () => { if (selected.size === orders.length) setSelected(new Set()); else setSelected(new Set(orders.map((o: any) => o.id))); };
   const handleSort = (colId: string) => { setSortCol(colId); setSortDir(s => sortCol === colId && s === "asc" ? "desc" : "asc"); };
+
+  const sortedOrders = (() => {
+    if (!sortCol) return orders;
+    const sorted = [...orders].sort((a: any, b: any) => {
+      let va: any, vb: any;
+      switch (sortCol) {
+        case "numero": va = a.order_number; vb = b.order_number; break;
+        case "data": va = a.completed_at; vb = b.completed_at; break;
+        case "empresa": va = a.company_rel?.name || ""; vb = b.company_rel?.name || ""; break;
+        case "funcionario": va = a.responsible_name || ""; vb = b.responsible_name || ""; break;
+        case "tipo": va = a.service_type_rel?.name || ""; vb = b.service_type_rel?.name || ""; break;
+        case "qrcode": va = a.qr_code?.id_codigo || ""; vb = b.qr_code?.id_codigo || ""; break;
+        case "observacao": va = a.observation || ""; vb = b.observation || ""; break;
+        default: return 0;
+      }
+      if (va == null) va = "";
+      if (vb == null) vb = "";
+      if (typeof va === "string") va = va.toLowerCase();
+      if (typeof vb === "string") vb = vb.toLowerCase();
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  })();
 
   const btnBase = (active: boolean): React.CSSProperties => ({
     display: "inline-flex", alignItems: "center", gap: 6,
@@ -676,7 +701,7 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
               </tr>
             </thead>
             <tbody>
-              {orders.map((order: any, idx: number) => {
+              {sortedOrders.map((order: any, idx: number) => {
                 const isSel = selected.has(order.id);
                 return (
                   <tr key={order.id} style={{
@@ -699,12 +724,12 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
                     </td>
                     {visibleCols.has("numero") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontWeight: 700, color: C.primary, fontSize: D.fs, textAlign: "center" }}>#{order.order_number}</td>}
                     {visibleCols.has("data") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, color: C.textMuted, fontFamily: "monospace", textAlign: "center" }}>{formatDate(order.completed_at)}</td>}
-                    {visibleCols.has("empresa") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, fontWeight: 600, color: C.textBody, textAlign: "center", wordBreak: "break-word" }}>{order.company_rel?.name || order.company_name || "—"}</td>}
-                    {visibleCols.has("funcionario") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, color: C.textBody, textAlign: "center" }}>{order.employee?.full_name || order.responsible_name || "—"}</td>}
-                    {visibleCols.has("tipo") && <td style={{ padding: `${D.padY}px ${D.padX}px`, textAlign: "center" }}><Badge variant="success">{order.service_type_rel?.name || order.service_type || "Servico"}</Badge></td>}
+                    {visibleCols.has("empresa") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, fontWeight: 600, color: C.textBody, textAlign: "center", wordBreak: "break-word" }}>{order.company_rel?.name || "—"}</td>}
+                    {visibleCols.has("funcionario") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, color: C.textBody, textAlign: "center" }}>{order.responsible_name || "—"}</td>}
+                    {visibleCols.has("tipo") && <td style={{ padding: `${D.padY}px ${D.padX}px`, textAlign: "center" }}><Badge variant="success">{order.service_type_rel?.name || "Servico"}</Badge></td>}
                     {visibleCols.has("qrcode") && <td style={{ padding: `${D.padY}px ${D.padX}px`, textAlign: "center" }}>
-                      <span style={{ fontWeight: 700, fontSize: D.fs, color: C.textTitle, display: "block" }}>{order.qr_code?.id_codigo || order.id_codigo || "—"}</span>
-                      <span style={{ fontSize: D.fs - 1, color: C.textMuted }}>{order.qr_code?.id_nome || order.id_nome || ""}</span>
+                      <span style={{ fontWeight: 700, fontSize: D.fs, color: C.textTitle, display: "block" }}>{order.qr_code?.id_codigo || "—"}</span>
+                      <span style={{ fontSize: D.fs - 1, color: C.textMuted }}>{order.qr_code?.id_nome || ""}</span>
                     </td>}
                     {visibleCols.has("observacao") && <td style={{ padding: `${D.padY}px ${D.padX}px`, fontSize: D.fs, color: C.textMuted, textAlign: "center", wordBreak: "break-word" }}>{order.observation || "—"}</td>}
                     {visibleCols.has("local") && (
@@ -734,20 +759,20 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
       ) : (
         /* Cards view */
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, padding: 20 }}>
-          {orders.map((order: any) => (
+          {sortedOrders.map((order: any) => (
             <div key={order.id} style={{
               padding: 16, borderRadius: 10, border: `1px solid ${C.cardBorder}`,
               background: dark ? "rgba(255,255,255,0.03)" : "#fafbfc",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, color: C.primary, fontSize: 14 }}>#{order.order_number}</span>
-                <Badge variant="success">{order.service_type_rel?.name || order.service_type || "Servico"}</Badge>
+                <Badge variant="success">{order.service_type_rel?.name || "Servico"}</Badge>
               </div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: C.textBody }}>{order.company_rel?.name || order.company_name || "—"}</p>
-              <p style={{ fontSize: 11, color: C.textMuted }}>{order.employee?.full_name || order.responsible_name || "—"}</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: C.textBody }}>{order.company_rel?.name || "—"}</p>
+              <p style={{ fontSize: 11, color: C.textMuted }}>{order.responsible_name || "—"}</p>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
                 <span style={{ fontSize: 11, color: C.textMuted, fontFamily: "monospace" }}>{formatDate(order.completed_at)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.textTitle }}>{order.qr_code?.id_codigo || order.id_codigo || ""}{(order.qr_code?.id_nome || order.id_nome) ? ` · ${order.qr_code?.id_nome || order.id_nome}` : ""}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.textTitle }}>{order.qr_code?.id_codigo || ""}{(order.qr_code?.id_nome) ? ` · ${order.qr_code?.id_nome}` : ""}</span>
               </div>
             </div>
           ))}

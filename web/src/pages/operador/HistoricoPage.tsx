@@ -5,11 +5,9 @@ import { formatDate } from "@/lib/utils";
 
 interface WorkOrderRecord {
   id: string;
-  id_codigo: string;
-  id_nome: string;
-  company_name: string;
-  company_address: string;
   completed_at: string;
+  company_rel: any;
+  qr_code: any;
 }
 
 const P = { yellow: "#eab308", yellowLight: "#facc15", dark: "#1a1a2e", darkAlt: "#0f3460" };
@@ -31,7 +29,7 @@ export function HistoricoPage() {
 
       const { data, error } = await supabase
         .from("work_orders")
-        .select("id, id_codigo, id_nome, company_name, company_address, completed_at")
+        .select("id, completed_at, company_rel:companies(name, address), qr_code:qr_codes(id_codigo, id_nome)")
         .gte("completed_at", dateFrom.toISOString())
         .order("completed_at", { ascending: false })
         .limit(50);
@@ -135,14 +133,14 @@ export function HistoricoPage() {
                 <p style={{ fontSize: 11, color: "#64748b", margin: 0, lineHeight: 1.4, fontFamily: "monospace" }}>{formatDate(order.completed_at)}</p>
               </div>
               <div style={{ padding: "10px 12px", textAlign: "center" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#171717", margin: 0, lineHeight: 1.3 }}>{order.company_name || "—"}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#171717", margin: 0, lineHeight: 1.3 }}>{order.company_rel?.name || "—"}</p>
                 <p style={{ fontSize: 9, color: "#94a3b8", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {order.company_address ? `${order.company_address.substring(0, 35)}...` : "—"}
+                  {order.company_rel?.address ? `${order.company_rel.address.substring(0, 35)}...` : "—"}
                 </p>
               </div>
               <div style={{ padding: "10px 12px", textAlign: "center" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: P.yellow, margin: 0 }}>{order.id_codigo}</p>
-                <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0" }}>{order.id_nome}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: P.yellow, margin: 0 }}>{order.qr_code?.id_codigo || "—"}</p>
+                <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0" }}>{order.qr_code?.id_nome || "—"}</p>
               </div>
             </div>
           ))}
