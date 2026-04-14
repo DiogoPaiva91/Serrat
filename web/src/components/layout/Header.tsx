@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Bell, Search, Moon, Sun, PanelLeft } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Bell, Search, Moon, Sun, PanelLeft, User, LogOut } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useSidebarCollapse } from "@/hooks/useSidebarCollapse";
@@ -90,11 +90,21 @@ function NeuIconButton({
 
 /* ─── Header ─── */
 export function Header() {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { collapsed, setCollapsed } = useSidebarCollapse();
   const location = useLocation();
+  const navigate = useNavigate();
   const dark = theme === "dark";
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
 
   const pageTitle = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))?.label || "Dashboard";
 
@@ -172,24 +182,49 @@ export function Header() {
           <div className={cn("mx-0.5 hidden h-6 w-px shrink-0 sm:block", dark ? "bg-[#52525B]" : "bg-neutral-300")} />
 
           {/* User chip */}
-          <div className="flex items-center gap-2.5 pl-1">
-            <div className="text-right hidden md:block">
-              <p className={cn("text-sm font-medium leading-none", dark ? "text-[#E2E2E8]" : "text-foreground")}>
-                {profile?.full_name}
-              </p>
-              <p className={cn("text-xs mt-0.5", dark ? "text-[#71717a]" : "text-muted-foreground")} style={{ textTransform: "capitalize" }}>
-                {profile?.role}
-              </p>
-            </div>
-            <div
-              className="h-9 w-9 rounded-[10px] flex items-center justify-center shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #facc15, #eab308)",
-                boxShadow: "0 2px 8px rgba(234,179,8,0.3)",
-              }}
-            >
-              <span className="text-[#1a1a1a] font-bold text-sm">{initials}</span>
-            </div>
+          <div ref={menuRef} className="relative flex items-center gap-2.5 pl-1">
+            <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2.5 cursor-pointer">
+              <div className="text-right hidden md:block">
+                <p className={cn("text-sm font-medium leading-none", dark ? "text-[#E2E2E8]" : "text-foreground")}>
+                  {profile?.full_name}
+                </p>
+                <p className={cn("text-xs mt-0.5", dark ? "text-[#71717a]" : "text-muted-foreground")} style={{ textTransform: "capitalize" }}>
+                  {profile?.role}
+                </p>
+              </div>
+              <div
+                className="h-9 w-9 rounded-[10px] flex items-center justify-center shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, #facc15, #eab308)",
+                  boxShadow: "0 2px 8px rgba(234,179,8,0.3)",
+                }}
+              >
+                <span className="text-[#1a1a1a] font-bold text-sm">{initials}</span>
+              </div>
+            </button>
+            {menuOpen && (
+              <div className={cn(
+                "absolute right-0 top-[calc(100%+8px)] z-50 w-56 rounded-xl border py-2 shadow-xl",
+                dark ? "border-white/10 bg-[#1a1a1a]" : "border-neutral-200 bg-white"
+              )}>
+                <div className={cn("px-4 py-2 border-b", dark ? "border-white/10" : "border-neutral-100")}>
+                  <p className={cn("text-sm font-semibold truncate", dark ? "text-white" : "text-neutral-900")}>{profile?.full_name}</p>
+                  <p className={cn("text-xs truncate", dark ? "text-neutral-400" : "text-neutral-500")}>{profile?.email}</p>
+                </div>
+                <button
+                  onClick={() => { setMenuOpen(false); navigate("/perfil"); }}
+                  className={cn("w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-opacity-50", dark ? "text-neutral-200 hover:bg-white/5" : "text-neutral-700 hover:bg-neutral-50")}
+                >
+                  <User className="h-4 w-4" /> Meu Perfil
+                </button>
+                <button
+                  onClick={async () => { setMenuOpen(false); await signOut(); navigate("/login"); }}
+                  className={cn("w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-opacity-50", dark ? "text-red-400 hover:bg-red-500/10" : "text-red-600 hover:bg-red-50")}
+                >
+                  <LogOut className="h-4 w-4" /> Sair
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,29 +1,19 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-
-const data = [
-  { name: "LENI", higienizacao: 520, manutencao: 35, inspecao: 18 },
-  { name: "CARLOS", higienizacao: 380, manutencao: 42, inspecao: 22 },
-  { name: "ANA", higienizacao: 15, manutencao: 8, inspecao: 22 },
-  { name: "MARCOS", higienizacao: 290, manutencao: 18, inspecao: 12 },
-];
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: "#171717", margin: "0 0 4px" }}>{label}</p>
-        {payload.map((entry: any, i: number) => (
-          <p key={i} style={{ fontSize: 11, margin: "1px 0", color: entry.color }}>
-            {entry.name}: <span style={{ fontWeight: 700 }}>{entry.value}</span>
-          </p>
-        ))}
+        <p style={{ fontSize: 11, fontWeight: 600, color: "#404040", margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 13, fontWeight: 800, color: "#22c55e", margin: "2px 0 0" }}>{payload[0].value} OS</p>
       </div>
     );
   }
   return null;
 };
 
-export function OsByEmployeeChart() {
+export function OsByEmployeeChart({ data }: { data: { name: string; os: number }[] }) {
+  if (!data || data.length === 0) return <p style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>Sem dados no periodo</p>;
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
@@ -32,10 +22,11 @@ export function OsByEmployeeChart() {
           <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }} />
-          <Bar dataKey="higienizacao" name="Higienizacao" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" />
-          <Bar dataKey="manutencao" name="Manutencao" fill="#eab308" stackId="a" />
-          <Bar dataKey="inspecao" name="Inspecao" fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
+          <Bar dataKey="os" radius={[4, 4, 0, 0]} animationDuration={1200}>
+            {data.map((_, index) => (
+              <Cell key={index} fill={index < 1 ? "#22c55e" : index < 3 ? "rgba(34,197,94,0.6)" : "rgba(34,197,94,0.3)"} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

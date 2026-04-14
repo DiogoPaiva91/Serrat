@@ -7,11 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyForm } from "@/components/forms/CompanyForm";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useQrCodes } from "@/hooks/useQrCodes";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 import { toast } from "sonner";
 
 export function CompaniesPage() {
   const { data: companies, isLoading, createMutation, updateMutation } = useCompanies();
   const { data: qrCodes } = useQrCodes();
+  useRealtimeTable("companies", "companies");
+  useRealtimeTable("qr_codes", "qr-codes");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 

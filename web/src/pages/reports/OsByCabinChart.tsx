@@ -1,10 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const data = Array.from({ length: 19 }, (_, i) => ({
-  cabin: `CAB ${String(i + 1).padStart(2, "0")}`,
-  os: Math.floor(Math.random() * 80) + 30,
-})).sort((a, b) => b.os - a.os);
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -17,14 +12,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function OsByCabinChart() {
+export function OsByCabinChart({ data }: { data: { cabin: string; os: number }[] }) {
+  if (!data || data.length === 0) return <p style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>Sem dados no periodo</p>;
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
           <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
-          <YAxis type="category" dataKey="cabin" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} width={55} />
+          <YAxis type="category" dataKey="cabin" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} width={80} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="os" radius={[0, 4, 4, 0]} animationDuration={1200}>
             {data.map((_, index) => (

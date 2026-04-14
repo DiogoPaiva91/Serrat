@@ -112,7 +112,7 @@ export function extractUniqueValues(records: BubbleWorkOrder[]) {
 
 // ─── Mapping ───
 
-function mapBubbleToSupabase(item: BubbleWorkOrder, rels: SyncRelationships) {
+function mapBubbleToSupabase(item: BubbleWorkOrder, rels: SyncRelationships, orderNumber?: number) {
   const cabine = (item["QR CODE"] || "").split("@")[0]?.trim() || null;
   const tipoServico = item["Tipo_serviço"]?.[0] || null;
 
@@ -125,6 +125,7 @@ function mapBubbleToSupabase(item: BubbleWorkOrder, rels: SyncRelationships) {
     created_at: item["Created Date"],
   };
 
+  if (orderNumber !== undefined) row.order_number = orderNumber;
   if (rels.companyId) row.company_id = rels.companyId;
   if (tipoServico && rels.serviceTypeMap[tipoServico]) row.service_type_id = rels.serviceTypeMap[tipoServico];
   if (cabine && rels.qrCodeMap[cabine]) row.qr_code_id = rels.qrCodeMap[cabine];
@@ -208,7 +209,7 @@ export async function deleteAllAndResetSequence(): Promise<{ error?: string }> {
     const { error } = await supabase.from("work_orders").delete().gte("id", "00000000-0000-0000-0000-000000000000");
     if (error) return { error: error.message };
     // Reset order_number sequence so next insert starts at 1
-    await supabase.rpc("reset_work_order_sequence").catch(() => {});
+    try { await supabase.rpc("reset_work_order_sequence"); } catch { /* ignore */ }
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -228,17 +229,33 @@ export async function syncFromBubble(
   };
   onProgress({ ...progress });
 
-  const descending = !!maxRecords;
+  const descending = !!maxRecords && !year;
   const supabaseReady = !!isSupabaseConfigured;
 
   try {
-    const firstPage = await fetchBubblePage(0, 1, descending);
+    const firstPage = await fetchBubblePage(0, 1, descending, year);
     const totalBubble = firstPage.remaining + firstPage.results.length;
     progress.total = maxRecords ? Math.min(maxRecords, totalBubble) : totalBubble;
-    progress.message = maxRecords
-      ? `Buscando os ${progress.total.toLocaleString("pt-BR")} mais recentes...`
-      : `Total: ${progress.total.toLocaleString("pt-BR")} OS no Bubble`;
+    progress.message = year
+      ? `Total: ${progress.total.toLocaleString("pt-BR")} OS de ${year} no Bubble`
+      : maxRecords
+        ? `Buscando os ${progress.total.toLocaleString("pt-BR")} mais recentes...`
+        : `Total: ${progress.total.toLocaleString("pt-BR")} OS no Bubble`;
     onProgress({ ...progress });
+
+    // Cache de proximo order_number por ano (pre-computa para evitar conflitos de batch)
+    const yearMaxCache: Record<number, number> = {};
+    async function getNextOrderForYear(y: number): Promise<number> {
+      if (yearMaxCache[y] !== undefined) return ++yearMaxCache[y];
+      try {
+        const { data } = await supabase.rpc("get_max_order_number_for_year", { target_year: y });
+        yearMaxCache[y] = (data as number || 0) + 1;
+        return yearMaxCache[y];
+      } catch {
+        yearMaxCache[y] = 1;
+        return 1;
+      }
+    }
 
     const importedSet = new Set<string>();
     if (supabaseReady) {
@@ -267,7 +284,7 @@ export async function syncFromBubble(
       }
 
       const batchSize = Math.min(PAGE_SIZE, progress.total - fetched);
-      const page = await fetchBubblePage(cursor, batchSize, descending);
+      const page = await fetchBubblePage(cursor, batchSize, descending, year);
       const results = page.results || [];
       if (!results.length) break;
 
@@ -280,7 +297,15 @@ export async function syncFromBubble(
 
       if (newRecords.length > 0) {
         allRaw.push(...newRecords);
-        const mapped = newRecords.map((r) => mapBubbleToSupabase(r, relationships));
+        // Sempre ordenar ASC por data: o registo mais antigo entra primeiro -> recebe order_number menor
+        const sorted = [...newRecords].sort((a, b) => new Date(a.Data || a["Created Date"]).getTime() - new Date(b.Data || b["Created Date"]).getTime());
+        // Atribui order_number sequencial agrupado por ano (necessario porque batch insert quebra o trigger)
+        const mapped: any[] = [];
+        for (const r of sorted) {
+          const recYear = new Date(r.Data || r["Created Date"]).getFullYear();
+          const orderNum = supabaseReady ? await getNextOrderForYear(recYear) : undefined;
+          mapped.push(mapBubbleToSupabase(r, relationships, orderNum));
+        }
 
         if (supabaseReady) {
           progress.status = "importing";

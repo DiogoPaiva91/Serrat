@@ -14,6 +14,7 @@ import { CompaniesPage } from "@/pages/companies/CompaniesPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
 import { TiposDeServicoPage } from "@/pages/tipos-de-servico/TiposDeServicoPage";
 import { SincronizacaoPage } from "@/pages/sincronizacao/SincronizacaoPage";
+import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { ROUTES } from "@/lib/constants";
 import { OperadorLayout } from "@/pages/operador/OperadorLayout";
 import { ScannerPage } from "@/pages/operador/ScannerPage";
@@ -37,6 +38,13 @@ function ProtectedRoute({ children, loginPath = ROUTES.LOGIN }: { children: Reac
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAdmin, loading } = useAuth();
+  if (loading) return null;
+  if (!isAdmin) return <Navigate to={ROUTES.DASHBOARD} replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -52,12 +60,13 @@ function AppRoutes() {
         <Route index element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="ordens-de-servico" element={<WorkOrdersPage />} />
-        <Route path="qr-codes" element={<QrCodesPage />} />
-        <Route path="funcionarios" element={<EmployeesPage />} />
-        <Route path="empresas" element={<CompaniesPage />} />
+        <Route path="qr-codes" element={<AdminRoute><QrCodesPage /></AdminRoute>} />
+        <Route path="funcionarios" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
+        <Route path="empresas" element={<AdminRoute><CompaniesPage /></AdminRoute>} />
         <Route path="tipos-de-servico" element={<TiposDeServicoPage />} />
-        <Route path="relatorios" element={<ReportsPage />} />
-        <Route path="sincronizacao" element={<SincronizacaoPage />} />
+        {/* Relatórios integrado ao Dashboard */}
+        <Route path="sincronizacao" element={<AdminRoute><SincronizacaoPage /></AdminRoute>} />
+        <Route path="perfil" element={<ProfilePage />} />
       </Route>
       {/* Operador PWA - sem login */}
       <Route path="/operador" element={<OperadorLayout />}>

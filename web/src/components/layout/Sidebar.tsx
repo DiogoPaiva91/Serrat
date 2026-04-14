@@ -27,18 +27,18 @@ interface MenuItem {
   href?: string;
   action?: string;
   external?: boolean;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: ROUTES.DASHBOARD },
   { icon: ClipboardList, label: "Ordens de Serviço", href: ROUTES.WORK_ORDERS },
-  { icon: QrCode, label: "QR Codes", href: ROUTES.QR_CODES },
-  { icon: Users, label: "Funcionarios", href: ROUTES.EMPLOYEES },
-  { icon: Building2, label: "Empresas", href: ROUTES.COMPANIES },
+  { icon: QrCode, label: "QR Codes", href: ROUTES.QR_CODES, adminOnly: true },
+  { icon: Users, label: "Usuarios", href: ROUTES.EMPLOYEES, adminOnly: true },
+  { icon: Building2, label: "Empresas", href: ROUTES.COMPANIES, adminOnly: true },
   { icon: Wrench, label: "Tipos de Serviço", href: ROUTES.SERVICE_TYPES },
-  { icon: BarChart3, label: "Relatorios", href: ROUTES.REPORTS },
-  { icon: CloudDownload, label: "Sincronizacao", href: ROUTES.SYNC },
-  { icon: Smartphone, label: "Operador", href: "/operador/scanner", external: true },
+  { icon: CloudDownload, label: "Sincronizacao", href: ROUTES.SYNC, adminOnly: true },
+  { icon: Smartphone, label: "Operador", href: "/operador/scanner", external: true, adminOnly: true },
 ];
 
 /* ─── Neumorphic tokens ─── */
@@ -493,7 +493,7 @@ export function Sidebar({ onHoveringChange }: { onHoveringChange?: (hovering: bo
   const { collapsed, setCollapsed } = useSidebarCollapse();
   const [hovering, setHovering] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -616,7 +616,7 @@ export function Sidebar({ onHoveringChange }: { onHoveringChange?: (hovering: bo
           padding: "12px 0",
           scrollbarWidth: "none",
         }}>
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter(i => !i.adminOnly || isAdmin).map((item) => (
             <SidebarItem
               key={item.href ?? item.label}
               item={item}

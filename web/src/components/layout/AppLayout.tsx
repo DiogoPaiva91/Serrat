@@ -3,11 +3,20 @@ import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { SidebarCollapseContext } from "@/hooks/useSidebarCollapse";
+import { useAuth } from "@/providers/AuthProvider";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AppLayout() {
+  const { profile } = useAuth();
+  const qc = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarHovering, setSidebarHovering] = useState(false);
+  const [pwdDone, setPwdDone] = useState(false);
   const sidebarWidth = collapsed ? (sidebarHovering ? 230 : 72) : 230;
+
+  const mustChangePwd = false; // disabled until column exists
 
   return (
     <SidebarCollapseContext.Provider value={{ collapsed, setCollapsed }}>
@@ -27,6 +36,17 @@ export function AppLayout() {
             </div>
           </main>
         </div>
+        {profile && mustChangePwd && (
+          <ChangePasswordDialog
+            open={mustChangePwd}
+            userId={profile.id}
+            onDone={async () => {
+              setPwdDone(true);
+              await supabase.auth.refreshSession();
+              qc.invalidateQueries();
+            }}
+          />
+        )}
       </div>
     </SidebarCollapseContext.Provider>
   );

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Session, User } from "@supabase/supabase-js";
 
-type UserRole = "admin" | "gestor" | "operador";
+type UserRole = "admin" | "gestor" | "operador" | "consultor";
 
 interface UserProfile {
   id: string;
@@ -13,6 +13,7 @@ interface UserProfile {
   company_id: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  must_change_password?: boolean;
 }
 
 interface AuthContextType {

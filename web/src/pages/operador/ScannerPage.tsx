@@ -4,8 +4,9 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
   Camera, MapPin, CheckCircle2, XCircle, Loader2,
-  RefreshCw, User, List, MessageSquare,
+  RefreshCw, User, List, MessageSquare, Plus, ChevronDown,
 } from "lucide-react";
+import { useOperators, useAddOperator } from "@/hooks/useOperators";
 
 interface GeoPosition { latitude: number; longitude: number; accuracy: number; }
 type ViewState = "idle" | "scanning" | "form" | "success";
@@ -39,6 +40,12 @@ export function ScannerPage() {
 
   const [todayCount, setTodayCount] = useState<number | null>(null);
   const [monthCount, setMonthCount] = useState<number | null>(null);
+  const [showOperatorList, setShowOperatorList] = useState(false);
+  const [operatorSearch, setOperatorSearch] = useState("");
+  const operatorRef = useRef<HTMLDivElement>(null);
+
+  const { data: operators = [] } = useOperators();
+  const addOperator = useAddOperator();
 
   const fetchCounts = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -70,6 +77,12 @@ export function ScannerPage() {
 
   useEffect(() => { if (!geoRequested) { setGeoRequested(true); getLocation(); } }, [getLocation, geoRequested]);
 
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (operatorRef.current && !operatorRef.current.contains(e.target as Node)) setShowOperatorList(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
   const startScanner = async () => {
     setCameraError(null); setView("scanning");
     await new Promise((r) => setTimeout(r, 150));
@@ -94,7 +107,9 @@ export function ScannerPage() {
   useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
 
   const handleQrScanned = async (data: string) => {
-    const parts = data.split("|");
+    // Suporta separador @ (novo padrao) e | (legacy)
+    const sep = data.includes("@") ? "@" : "|";
+    const parts = data.split(sep).map(p => p.trim());
     const idCodigo = parts[0] || data;
     const idNome = parts[1] || "";
     setScannedIdCodigo(idCodigo); setScannedIdNome(idNome);
@@ -240,12 +255,55 @@ export function ScannerPage() {
 
           {/* Form fields card */}
           <div style={{ ...card, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
+            <div ref={operatorRef} style={{ position: "relative" }}>
               <span style={labelStyle}>Nome do Responsável</span>
-              <div style={inputWrap}>
+              <div style={{ ...inputWrap, borderColor: showOperatorList ? "#eab308" : "#e2e8f0" }}>
                 <div style={inputIcon}><User size={18} style={{ color: "#94a3b8" }} /></div>
-                <input type="text" value={responsibleName} onChange={e => setResponsibleName(e.target.value)} placeholder="Nome completo" style={inputField} />
+                <input type="text" value={responsibleName}
+                  onChange={e => { setResponsibleName(e.target.value); setOperatorSearch(e.target.value); setShowOperatorList(true); }}
+                  onFocus={() => setShowOperatorList(true)}
+                  placeholder="Selecione ou digite um nome" style={inputField} />
+                <div onClick={() => setShowOperatorList(!showOperatorList)} style={{ padding: "0 10px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                  <ChevronDown size={16} style={{ color: "#94a3b8", transition: "transform .15s", transform: showOperatorList ? "rotate(180deg)" : "none" }} />
+                </div>
               </div>
+              {showOperatorList && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+                  background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 12,
+                  marginTop: 4, maxHeight: 200, overflowY: "auto",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                }}>
+                  {operators
+                    .filter(op => !operatorSearch || op.name.toLowerCase().includes(operatorSearch.toLowerCase()))
+                    .map(op => (
+                      <div key={op.id} onClick={() => { setResponsibleName(op.name); setShowOperatorList(false); }}
+                        style={{ padding: "10px 14px", fontSize: 14, color: "#171717", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        {op.name}
+                      </div>
+                    ))}
+                  {operatorSearch && !operators.some(op => op.name.toLowerCase() === operatorSearch.toLowerCase()) && (
+                    <div onClick={async () => {
+                      try {
+                        await addOperator.mutateAsync(operatorSearch.trim());
+                        setResponsibleName(operatorSearch.trim());
+                        setShowOperatorList(false);
+                        toast.success(`"${operatorSearch.trim()}" adicionado!`);
+                      } catch { toast.error("Erro ao adicionar operador"); }
+                    }}
+                      style={{ padding: "10px 14px", fontSize: 14, color: "#eab308", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#fffbeb")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      <Plus size={16} /> Adicionar "{operatorSearch.trim()}"
+                    </div>
+                  )}
+                  {!operatorSearch && operators.length === 0 && (
+                    <div style={{ padding: "10px 14px", fontSize: 13, color: "#94a3b8" }}>Nenhum operador cadastrado</div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <span style={labelStyle}>Tipo de Serviço</span>

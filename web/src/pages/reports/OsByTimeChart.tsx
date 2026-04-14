@@ -1,10 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const data = Array.from({ length: 24 }, (_, i) => ({
-  hour: `${String(i).padStart(2, "0")}h`,
-  os: i >= 6 && i <= 20 ? Math.floor(Math.random() * 15) + (i >= 8 && i <= 17 ? 10 : 2) : Math.floor(Math.random() * 3),
-}));
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -17,7 +12,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function OsByTimeChart() {
+export function OsByTimeChart({ data }: { data: { hour: string; os: number }[] }) {
+  if (!data || data.length === 0) return <p style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>Sem dados no periodo</p>;
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">

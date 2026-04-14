@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select-native";
 import { Loader2, Users, Plus } from "lucide-react";
+import { useCompanies } from "@/hooks/useCompanies";
 
 interface EmployeeFormData {
   name: string;
@@ -12,6 +13,7 @@ interface EmployeeFormData {
   phone: string;
   role: string;
   password?: string;
+  company_id?: string | null;
 }
 
 interface EmployeeFormProps {
@@ -22,12 +24,13 @@ interface EmployeeFormProps {
   loading?: boolean;
 }
 
-const emptyForm: EmployeeFormData = { name: "", email: "", phone: "", role: "operador", password: "" };
+const emptyForm: EmployeeFormData = { name: "", email: "", phone: "", role: "consultor", password: "", company_id: "" };
 
 export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loading: externalLoading }: EmployeeFormProps) {
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<EmployeeFormData>(emptyForm);
+  const { data: companies = [] } = useCompanies();
 
   useEffect(() => {
     if (open) setForm(initialData || emptyForm);
@@ -53,10 +56,10 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loadin
             <div>
               <DialogHeader className="p-0 space-y-0">
                 <DialogTitle className="text-white text-lg font-bold">
-                  {isEditing ? "Editar Funcionário" : "Novo Funcionário"}
+                  {isEditing ? "Editar Usuario" : "Novo Usuario"}
                 </DialogTitle>
                 <DialogDescription className="text-white/60 text-sm mt-0.5">
-                  {isEditing ? form.name || "Atualize as informações" : "Cadastre um novo funcionário no sistema"}
+                  {isEditing ? form.name || "Atualize as informações" : "Cadastre um novo usuario no sistema"}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -85,13 +88,24 @@ export function EmployeeForm({ open, onOpenChange, initialData, onSubmit, loadin
                 <Input id="phone" placeholder="(13) 99999-0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Funcao</Label>
+                <Label htmlFor="role">Perfil</Label>
                 <Select id="role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                  <option value="operador">Operador</option>
-                  <option value="gestor">Gestor</option>
-                  <option value="admin">Administrador</option>
+                  <option value="consultor">Consultor</option>
+                  <option value="admin">Admin</option>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  {form.role === "consultor" ? "Apenas visualizacao — nao pode editar dados" : "Acesso total ao sistema"}
+                </p>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Empresa</Label>
+              <Select id="company" value={form.company_id || ""} onChange={(e) => setForm({ ...form, company_id: e.target.value || null })}>
+                <option value="">— Sem empresa —</option>
+                {(companies as any[]).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </Select>
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

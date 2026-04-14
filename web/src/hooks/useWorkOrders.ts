@@ -9,7 +9,15 @@ interface WorkOrderFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  sortCol?: string;
+  sortDir?: "asc" | "desc";
 }
+
+const SORT_COL_MAP: Record<string, string> = {
+  numero: "order_number",
+  data: "completed_at",
+  funcionario: "responsible_name",
+};
 
 export function useWorkOrders(filters: WorkOrderFilters = {}) {
   const { profile } = useAuth();
@@ -19,10 +27,18 @@ export function useWorkOrders(filters: WorkOrderFilters = {}) {
   return useQuery({
     queryKey: ["work-orders", filters],
     queryFn: async () => {
+      const orderBy = SORT_COL_MAP[filters.sortCol || "data"] || "completed_at";
+      const ascending = (filters.sortDir || "desc") === "asc";
+
       let query = supabase
         .from("work_orders")
         .select("*, qr_code:qr_codes(id_codigo, id_nome), service_type_rel:service_types(name), company_rel:companies(name, address)", { count: "exact" })
-        .order("completed_at", { ascending: false });
+        .order(orderBy, { ascending });
+
+      // Consultor só vê dados da própria empresa; admin vê tudo
+      if (profile?.role !== "admin" && profile?.company_id) {
+        query = query.eq("company_id", profile.company_id);
+      }
 
       if (filters.dateFrom) query = query.gte("completed_at", filters.dateFrom);
       if (filters.dateTo) query = query.lte("completed_at", filters.dateTo + "T23:59:59");

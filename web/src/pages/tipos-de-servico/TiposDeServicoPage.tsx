@@ -7,10 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TipoDeServicoForm } from "@/components/forms/TipoDeServicoForm";
 import { useTiposDeServico } from "@/hooks/useTiposDeServico";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
+import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
 
 export function TiposDeServicoPage() {
+  const { isAdmin } = useAuth();
   const { data: tipos, isLoading, createMutation, updateMutation, deleteMutation } = useTiposDeServico();
+  useRealtimeTable("service_types", "service-types");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -51,10 +55,12 @@ export function TiposDeServicoPage() {
           <h2 className="text-2xl font-bold text-foreground">Tipos de Serviço</h2>
           <p className="text-muted-foreground text-sm mt-1">Gerencie os tipos de serviço disponíveis</p>
         </div>
-        <Button className="gap-2" onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Novo Tipo
-        </Button>
+        {isAdmin && (
+          <Button className="gap-2" onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Novo Tipo
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -65,9 +71,11 @@ export function TiposDeServicoPage() {
         <div className="text-center py-16">
           <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Nenhum tipo de serviço cadastrado</p>
-          <Button className="mt-4 gap-2" onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4" /> Cadastrar Primeiro Tipo
-          </Button>
+          {isAdmin && (
+            <Button className="mt-4 gap-2" onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4" /> Cadastrar Primeiro Tipo
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -88,14 +96,16 @@ export function TiposDeServicoPage() {
                 {tipo.description && (
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{tipo.description}</p>
                 )}
-                <div className="flex gap-2 pt-3 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => setEditingItem(tipo)}>
-                    <Pencil className="h-3.5 w-3.5" /> Editar
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setDeleteItem(tipo)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-2 pt-3 border-t">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => setEditingItem(tipo)}>
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setDeleteItem(tipo)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

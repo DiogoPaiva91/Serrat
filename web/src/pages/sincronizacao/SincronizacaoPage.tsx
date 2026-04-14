@@ -118,6 +118,10 @@ export function SincronizacaoPage() {
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [showRels, setShowRels] = useState(true);
 
+  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
+
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -148,7 +152,7 @@ export function SincronizacaoPage() {
 
   const handlePreviewFetch = async () => {
     abortRef.current = new AbortController();
-    const limit = maxRecords > 0 ? maxRecords : 150;
+    const limit = maxRecords > 0 ? maxRecords : undefined;
     await syncFromBubble(
       (p) => {
         setProgress(p);
@@ -160,6 +164,7 @@ export function SincronizacaoPage() {
       },
       abortRef.current.signal, limit,
       { serviceTypeMap: {}, qrCodeMap: {} },
+      selectedYear,
     );
     setPreviewLoaded(true);
   };
@@ -172,7 +177,7 @@ export function SincronizacaoPage() {
       serviceTypeMap,
       qrCodeMap,
     };
-    await syncFromBubble((p) => setProgress(p), abortRef.current.signal, limit, rels);
+    await syncFromBubble((p) => setProgress(p), abortRef.current.signal, limit, rels, selectedYear);
     loadStats();
   };
 
@@ -250,7 +255,12 @@ export function SincronizacaoPage() {
               <h2 className="text-lg font-semibold" style={{ color: c.textTitle }}>Passo 1: Buscar dados</h2>
               <p className="text-sm" style={{ color: c.textMuted }}>Busca os dados do Bubble para mapear relacionamentos</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <select value={selectedYear || ""} onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : undefined)}
+                className="h-9 rounded-lg px-3 text-sm font-medium outline-none" style={selectStyle}>
+                <option value="">Todos os anos</option>
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
               <select value={maxRecords} onChange={(e) => setMaxRecords(Number(e.target.value))}
                 className="h-9 rounded-lg px-3 text-sm font-medium outline-none" style={selectStyle}>
                 <option value={50}>Ultimos 50</option>

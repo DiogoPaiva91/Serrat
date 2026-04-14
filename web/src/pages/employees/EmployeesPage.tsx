@@ -3,12 +3,13 @@ import {
   Users, Plus, Search, Pencil, Filter, X, Calendar, ChevronDown,
   Inbox, ChevronLeft, ChevronRight, List, Grid3x3, Settings,
   Columns3, Rows3, LayoutGrid, GripVertical, Check, ChevronUp, ChevronsUpDown,
-  FileSpreadsheet, FileText,
+  FileSpreadsheet, FileText, Trash2, Power,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeForm } from "@/components/forms/EmployeeForm";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { supabase } from "@/lib/supabase";
@@ -36,10 +37,12 @@ const PAGE_SIZE = 20;
 
 const roleColors: Record<string, { bg: string; text: string }> = {
   admin: { bg: "#7c3aed15", text: "#7c3aed" },
+  consultor: { bg: "#2563eb15", text: "#2563eb" },
+  // Legacy fallback
   gestor: { bg: "#2563eb15", text: "#2563eb" },
   operador: { bg: "#16a34a15", text: "#16a34a" },
 };
-const roleLabels: Record<string, string> = { admin: "Administrador", gestor: "Gestor", operador: "Operador" };
+const roleLabels: Record<string, string> = { admin: "Admin", consultor: "Consultor", gestor: "Consultor", operador: "Consultor" };
 
 const Ic = {
   users: (s: number, c: string) => <svg width={s} height={s} viewBox="0 0 20 20" fill="none"><circle cx="7" cy="6" r="3" stroke={c} strokeWidth="1.4"/><path d="M1 17c0-3 2.5-5 6-5s6 2 6 5" stroke={c} strokeWidth="1.4" strokeLinecap="round"/><circle cx="14" cy="7" r="2" stroke={c} strokeWidth="1.2"/><path d="M15 12c2 .5 4 2 4 4" stroke={c} strokeWidth="1.2" strokeLinecap="round"/></svg>,
@@ -50,9 +53,9 @@ const ALL_COLUMNS = [
   { id: "nome", label: "Nome", fixed: true, width: "30%" },
   { id: "email", label: "Email", width: "25%" },
   { id: "telefone", label: "Telefone", width: "15%" },
-  { id: "funcao", label: "Funcao", width: "15%" },
+  { id: "funcao", label: "Perfil", width: "15%" },
   { id: "status", label: "Status", width: "10%" },
-  { id: "acoes", label: "Acoes", fixed: true, width: "70px", align: "center" as const },
+  { id: "acoes", label: "Acoes", fixed: true, width: "120px", align: "center" as const },
 ];
 
 type Density = "compact" | "normal" | "comfortable";
@@ -68,6 +71,7 @@ export function EmployeesPage() {
   const dark = theme === "dark";
   const C = dark ? DARK : LIGHT;
   const { data: employees, isLoading, refetch } = useEmployees();
+  useRealtimeTable("profiles", "employees");
 
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -129,27 +133,79 @@ export function EmployeesPage() {
     if (!data.password || data.password.length < 6) { toast.error("Senha deve ter no minimo 6 caracteres"); return; }
     setCreating(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email: data.email, password: data.password, options: { data: { full_name: data.name } } });
+      // Salva sessao do admin antes do signUp (que loga o novo user)
+      const { data: adminSession } = await supabase.auth.getSession();
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: { data: { full_name: data.name } },
+      });
       if (authError) throw authError;
+
+      // Restaura sessao do admin
+      if (adminSession?.session) {
+        await supabase.auth.setSession({
+          access_token: adminSession.session.access_token,
+          refresh_token: adminSession.session.refresh_token,
+        });
+      }
+
       if (authData.user) {
-        await supabase.from("profiles").update({ full_name: data.name, phone: data.phone || null, role: data.role, company_id: profile?.company_id }).eq("id", authData.user.id);
+        const { error: profErr } = await supabase.from("profiles").update({
+          full_name: data.name,
+          phone: data.phone || null,
+          role: data.role,
+          company_id: data.company_id || profile?.company_id,
+          email: data.email,
+        }).eq("id", authData.user.id);
+        if (profErr) throw profErr;
       }
       toast.success(`${data.name} cadastrado com sucesso!`);
       setFormOpen(false);
       refetch();
-    } catch (err: any) { toast.error(err.message || "Erro ao criar funcionario"); }
+    } catch (err: any) { toast.error(err.message || "Erro ao criar usuario"); }
     finally { setCreating(false); }
   };
 
   const handleEdit = async (data: any) => {
     if (!editingItem) return;
     try {
-      const { error } = await supabase.from("profiles").update({ full_name: data.name, phone: data.phone || null, role: data.role }).eq("id", editingItem.id);
+      const emailChanged = data.email && data.email !== editingItem.email;
+
+      // Email so pode ser alterado pelo proprio usuario (em /perfil)
+      if (emailChanged) {
+        toast.warning("Email do login so pode ser alterado pelo proprio usuario em Meu Perfil");
+        return;
+      }
+
+      const updates: any = { full_name: data.name, phone: data.phone || null, role: data.role, company_id: data.company_id || null };
+      if (emailChanged) updates.email = data.email;
+      const { error } = await supabase.from("profiles").update(updates).eq("id", editingItem.id);
       if (error) throw error;
-      toast.success("Funcionario atualizado!");
+      toast.success(emailChanged ? "Usuario atualizado (email alterado no login tambem)" : "Usuario atualizado!");
       setEditingItem(null);
       refetch();
     } catch (err: any) { toast.error(err.message || "Erro ao atualizar"); }
+  };
+
+  const handleToggleStatus = async (emp: any) => {
+    try {
+      const { error } = await supabase.from("profiles").update({ is_active: !emp.is_active }).eq("id", emp.id);
+      if (error) throw error;
+      toast.success(`Usuario ${!emp.is_active ? "ativado" : "desativado"}`);
+      refetch();
+    } catch (err: any) { toast.error(err.message || "Erro ao alterar status"); }
+  };
+
+  const handleDelete = async (emp: any) => {
+    if (!confirm(`Excluir usuario "${emp.full_name}"? Esta acao nao pode ser desfeita.`)) return;
+    try {
+      const { error } = await supabase.from("profiles").delete().eq("id", emp.id);
+      if (error) throw error;
+      toast.success("Usuario excluido");
+      refetch();
+    } catch (err: any) { toast.error(err.message || "Erro ao excluir"); }
   };
 
   const btnBase = (active: boolean): React.CSSProperties => ({
@@ -179,9 +235,9 @@ export function EmployeesPage() {
             </div>
             <div className="min-w-0">
               <h2 style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.2, margin: 0 }}>
-                Funcio<span style={{ color: C.primary }}>narios</span>
+                Usuarios e <span style={{ color: C.primary }}>Permissoes</span>
               </h2>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>Cadastro e gerenciamento da equipe</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>Gerencie o acesso ao sistema e perfis de usuarios</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.azul }} />
@@ -192,7 +248,7 @@ export function EmployeesPage() {
             </div>
           </div>
           <Button onClick={() => setFormOpen(true)} className="shrink-0 border-white/20 text-white hover:bg-white/10 bg-white/[0.08]" variant="outline">
-            <Plus className="h-4 w-4" /> Novo Funcionario
+            <Plus className="h-4 w-4" /> Novo Usuario
           </Button>
         </div>
       </div>
@@ -208,8 +264,8 @@ export function EmployeesPage() {
             </button>
             {showFilters && (
               <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 50, width: 240, borderRadius: cardRadius, background: C.cardBg, border: `1px solid ${C.cardBorder}`, boxShadow: "0 12px 36px rgba(0,0,0,0.18)", padding: "12px 16px" }}>
-                <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted, marginBottom: 8 }}>Funcao</p>
-                {[{ v: "", l: "Todas" }, { v: "admin", l: "Administrador" }, { v: "gestor", l: "Gestor" }, { v: "operador", l: "Operador" }].map(opt => (
+                <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted, marginBottom: 8 }}>Perfil</p>
+                {[{ v: "", l: "Todos" }, { v: "admin", l: "Admin" }, { v: "consultor", l: "Consultor" }].map(opt => (
                   <button key={opt.v || "all"} onClick={() => { setFilterRole(opt.v); setPage(1); }} style={{
                     display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, border: "none", width: "100%",
                     background: filterRole === opt.v ? `${C.primary}12` : "transparent", color: filterRole === opt.v ? C.primary : C.textBody,
@@ -276,7 +332,7 @@ export function EmployeesPage() {
             <Users className="h-[22px] w-[22px]" style={{ color: C.primary }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: C.textTitle, margin: 0 }}>Funcionarios</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: C.textTitle, margin: 0 }}>Usuarios</h3>
             <p style={{ fontSize: 11, color: C.textMuted, margin: "3px 0 0" }}>{totalCount} {totalCount === 1 ? "registro" : "registros"} {(search || filterRole) ? "filtrados" : "no total"} · Atualizado agora</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -404,10 +460,18 @@ export function EmployeesPage() {
                         </td>
                       )}
                       {visibleCols.has("acoes") && (
-                        <td style={{ padding: `${D.padY}px ${D.padX}px`, textAlign: "center" }}>
-                          <button onClick={() => setEditingItem(emp)} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.verde }} title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
+                        <td style={{ padding: `${D.padY}px 6px`, textAlign: "center", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "inline-flex", gap: 4, justifyContent: "center" }}>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingItem(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${C.verde}30`, background: `${C.verde}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: C.verde, flexShrink: 0 }} title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleToggleStatus(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${(emp.is_active ? C.laranja : C.verde)}30`, background: `${(emp.is_active ? C.laranja : C.verde)}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: emp.is_active ? C.laranja : C.verde, flexShrink: 0 }} title={emp.is_active ? "Desativar" : "Ativar"}>
+                              <Power className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${C.vermelho}30`, background: `${C.vermelho}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: C.vermelho, flexShrink: 0 }} title="Excluir">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -416,7 +480,7 @@ export function EmployeesPage() {
                 {paged.length === 0 && (
                   <tr><td colSpan={cols.length + 1} style={{ padding: "48px 16px", textAlign: "center", color: C.textMuted }}>
                     <Inbox className="h-8 w-8 mx-auto mb-2" style={{ color: C.textLight }} />
-                    <p style={{ fontSize: 13, fontWeight: 600 }}>Nenhum funcionario encontrado</p>
+                    <p style={{ fontSize: 13, fontWeight: 600 }}>Nenhum usuario encontrado</p>
                   </td></tr>
                 )}
               </tbody>
@@ -441,12 +505,20 @@ export function EmployeesPage() {
                       <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>{emp.email}</p>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600, background: rc.bg, color: rc.text }}>{roleLabels[emp.role] || emp.role}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ width: 7, height: 7, borderRadius: "50%", background: emp.is_active ? C.verde : C.textMuted }} />
                       <span style={{ fontSize: 11, color: emp.is_active ? C.verde : C.textMuted }}>{emp.is_active ? "Ativo" : "Inativo"}</span>
                     </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", paddingTop: 8, borderTop: `1px solid ${C.cardBorder}` }}>
+                    <button onClick={(e) => { e.stopPropagation(); handleToggleStatus(emp); }} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, color: emp.is_active ? C.laranja : C.verde, fontSize: 11 }}>
+                      <Power className="h-3 w-3" /> {emp.is_active ? "Desativar" : "Ativar"}
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(emp); }} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, color: C.vermelho, fontSize: 11 }}>
+                      <Trash2 className="h-3 w-3" /> Excluir
+                    </button>
                   </div>
                 </div>
               );
@@ -470,7 +542,7 @@ export function EmployeesPage() {
 
       {/* Modals */}
       <EmployeeForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} loading={creating} />
-      <EmployeeForm open={!!editingItem} onOpenChange={open => !open && setEditingItem(null)} initialData={editingItem ? { name: editingItem.full_name, email: editingItem.email, phone: editingItem.phone || "", role: editingItem.role } : null} onSubmit={handleEdit} />
+      <EmployeeForm open={!!editingItem} onOpenChange={open => !open && setEditingItem(null)} initialData={editingItem ? { name: editingItem.full_name, email: editingItem.email, phone: editingItem.phone || "", role: editingItem.role, company_id: editingItem.company_id || "" } : null} onSubmit={handleEdit} />
     </div>
   );
 }

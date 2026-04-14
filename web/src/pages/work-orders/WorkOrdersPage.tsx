@@ -4,13 +4,18 @@ import {
   ChevronDown, MapPin, FileSpreadsheet, FileText, Clock,
   CheckCircle2, Activity, Inbox, ChevronLeft, ChevronRight,
   List, Grid3x3, Settings, Columns3, Rows3, LayoutGrid,
-  GripVertical, Check, ChevronUp, ChevronsUpDown,
+  GripVertical, Check, ChevronUp, ChevronsUpDown, Trash2, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkOrders } from "@/hooks/useWorkOrders";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +45,7 @@ const Ic = {
 /* ═══ MAIN ═══ */
 export function WorkOrdersPage() {
   const { theme } = useTheme();
+  const { isAdmin } = useAuth();
   const dark = theme === "dark";
   const C = dark ? DARK : LIGHT;
 
@@ -47,6 +53,8 @@ export function WorkOrdersPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const [sortCol, setSortCol] = useState<string>("data");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [searchFocused, setSearchFocused] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showPeriodo, setShowPeriodo] = useState(false);
@@ -54,10 +62,13 @@ export function WorkOrdersPage() {
   const filterRef = useRef<HTMLDivElement>(null);
   const periodoRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading } = useWorkOrders({ dateFrom, dateTo, search, page, pageSize: 15 });
+  const qc = useQueryClient();
+  const { data, isLoading } = useWorkOrders({ dateFrom, dateTo, search, page, pageSize: 15, sortCol, sortDir });
   const orders = data?.data || [];
   const totalCount = data?.count || 0;
   const totalPages = Math.ceil(totalCount / 15);
+
+  useRealtimeTable("work_orders", "work-orders");
 
   const activeFilters = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
   const hasSearch = !!search;
@@ -321,6 +332,10 @@ export function WorkOrdersPage() {
         page={page}
         setPage={setPage}
         hasFilters={!!(search || dateFrom || dateTo)}
+        sortCol={sortCol}
+        sortDir={sortDir}
+        onSort={(col) => { setSortDir(s => sortCol === col && s === "asc" ? "desc" : "asc"); setSortCol(col); setPage(1); }}
+        canDelete={isAdmin}
       />
     </div>
   );
@@ -348,20 +363,40 @@ const ALL_COLUMNS = [
   { id: "local", label: "Local", fixed: true, width: "50px" },
 ];
 
-function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page, setPage, hasFilters }: {
+function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page, setPage, hasFilters, sortCol, sortDir, onSort, canDelete }: {
   dark: boolean; C: typeof LIGHT; orders: any[]; isLoading: boolean;
   totalCount: number; totalPages: number; page: number; setPage: (p: number) => void; hasFilters: boolean;
+  sortCol: string; sortDir: "asc" | "desc"; onSort: (col: string) => void; canDelete?: boolean;
 }) {
+  const qc = useQueryClient();
   const [view, setView] = useState<"table" | "cards">("table");
   const [density, setDensity] = useState<Density>("normal");
   const [showConfig, setShowConfig] = useState(false);
   const [configTab, setConfigTab] = useState<"colunas" | "densidade" | "aparencia">("colunas");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [visibleCols, setVisibleCols] = useState<Set<string>>(new Set(ALL_COLUMNS.map(c => c.id)));
-  const [sortCol, setSortCol] = useState<string | null>("data");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [appearance, setAppearance] = useState({ zebra: true, verticalBorders: false, stickyHeader: true, wrapText: false });
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const configRef = useRef<HTMLDivElement>(null);
+
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("work_orders").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`${ids.length} ordem(ns) excluída(s)`);
+      setSelected(new Set());
+      setConfirmDelete(false);
+      qc.invalidateQueries({ queryKey: ["work-orders"] });
+    } catch (err: any) {
+      toast.error("Erro ao excluir: " + (err.message || "Tente novamente"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!showConfig) return;
@@ -375,32 +410,10 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
 
   const toggleSel = (id: string) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
   const toggleAll = () => { if (selected.size === orders.length) setSelected(new Set()); else setSelected(new Set(orders.map((o: any) => o.id))); };
-  const handleSort = (colId: string) => { setSortCol(colId); setSortDir(s => sortCol === colId && s === "asc" ? "desc" : "asc"); };
+  const handleSort = (colId: string) => onSort(colId);
 
-  const sortedOrders = (() => {
-    if (!sortCol) return orders;
-    const sorted = [...orders].sort((a: any, b: any) => {
-      let va: any, vb: any;
-      switch (sortCol) {
-        case "numero": va = a.order_number; vb = b.order_number; break;
-        case "data": va = a.completed_at; vb = b.completed_at; break;
-        case "empresa": va = a.company_rel?.name || ""; vb = b.company_rel?.name || ""; break;
-        case "funcionario": va = a.responsible_name || ""; vb = b.responsible_name || ""; break;
-        case "tipo": va = a.service_type_rel?.name || ""; vb = b.service_type_rel?.name || ""; break;
-        case "qrcode": va = a.qr_code?.id_codigo || ""; vb = b.qr_code?.id_codigo || ""; break;
-        case "observacao": va = a.observation || ""; vb = b.observation || ""; break;
-        default: return 0;
-      }
-      if (va == null) va = "";
-      if (vb == null) vb = "";
-      if (typeof va === "string") va = va.toLowerCase();
-      if (typeof vb === "string") vb = vb.toLowerCase();
-      if (va < vb) return sortDir === "asc" ? -1 : 1;
-      if (va > vb) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  })();
+  // Sorting is done server-side via Supabase query
+  const sortedOrders = orders;
 
   const btnBase = (active: boolean): React.CSSProperties => ({
     display: "inline-flex", alignItems: "center", gap: 6,
@@ -451,6 +464,34 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
 
         {/* Right side controls */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          {selected.size > 0 && canDelete && (
+            confirmDelete ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.vermelho }}>Excluir {selected.size}?</span>
+                <button onClick={handleDeleteSelected} disabled={deleting} style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, border: "none",
+                  background: C.vermelho, color: "#fff", cursor: "pointer", opacity: deleting ? 0.6 : 1,
+                }}>
+                  {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                  {deleting ? "Excluindo..." : "Sim"}
+                </button>
+                <button onClick={() => setConfirmDelete(false)} style={{
+                  padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, border: `1px solid ${C.cardBorder}`,
+                  background: "transparent", color: C.textMuted, cursor: "pointer",
+                }}>Não</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                border: `1.5px solid ${C.vermelho}40`, background: "transparent",
+                color: C.vermelho, cursor: "pointer",
+              }}>
+                <Trash2 className="h-3 w-3" /> Excluir ({selected.size})
+              </button>
+            )
+          )}
           {hasFilters && (
             <span style={{
               padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 700,

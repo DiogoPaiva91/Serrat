@@ -1,13 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
-  BarChart3, Calendar, Trophy, User, Filter, Search, X, ChevronDown,
-  FileSpreadsheet, FileText,
+  BarChart3, Calendar, Trophy, User, Search, X, ChevronDown,
+  FileSpreadsheet, FileText, Download,
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 import { OsByCabinChart } from "./OsByCabinChart";
 import { OsByEmployeeChart } from "./OsByEmployeeChart";
 import { OsByTimeChart } from "./OsByTimeChart";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 /* ═══ COLORS ═══ */
 const LIGHT = {
@@ -31,8 +36,24 @@ const Ic = {
   chart: (s: number, c: string) => <svg width={s} height={s} viewBox="0 0 20 20" fill="none"><rect x="3" y="10" width="3" height="7" rx="1" stroke={c} strokeWidth="1.3"/><rect x="8.5" y="6" width="3" height="11" rx="1" stroke={c} strokeWidth="1.3"/><rect x="14" y="3" width="3" height="14" rx="1" stroke={c} strokeWidth="1.3"/></svg>,
 };
 
+function getDateRange(periodo: string): { from: string; to: string } {
+  const now = new Date();
+  const to = now.toISOString();
+  let from: Date;
+  switch (periodo) {
+    case "Hoje": from = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break;
+    case "Ultimos 7 dias": from = new Date(now.getTime() - 7 * 86400000); break;
+    case "Ultimos 30 dias": from = new Date(now.getTime() - 30 * 86400000); break;
+    case "Ultimos 90 dias": from = new Date(now.getTime() - 90 * 86400000); break;
+    case "Este ano": from = new Date(now.getFullYear(), 0, 1); break;
+    default: from = new Date(2020, 0, 1); break;
+  }
+  return { from: from.toISOString(), to };
+}
+
 export function ReportsPage() {
   const { theme } = useTheme();
+  const { profile } = useAuth();
   const dark = theme === "dark";
   const C = dark ? DARK : LIGHT;
 
@@ -40,6 +61,8 @@ export function ReportsPage() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showPeriodo, setShowPeriodo] = useState(false);
   const [periodo, setPeriodo] = useState("Ultimos 30 dias");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const periodoRef = useRef<HTMLDivElement>(null);
   const periodoOptions = ["Hoje", "Ultimos 7 dias", "Ultimos 30 dias", "Ultimos 90 dias", "Este ano", "Todos"];
 
@@ -49,11 +72,104 @@ export function ReportsPage() {
     return () => document.removeEventListener("mousedown", h);
   }, [showPeriodo]);
 
+  useRealtimeTable("work_orders", "report-data");
+
+  const range = useMemo(() => {
+    if (dateFrom || dateTo) {
+      return {
+        from: dateFrom ? new Date(dateFrom).toISOString() : new Date(2020, 0, 1).toISOString(),
+        to: dateTo ? new Date(dateTo + "T23:59:59").toISOString() : new Date().toISOString(),
+      };
+    }
+    return getDateRange(periodo);
+  }, [periodo, dateFrom, dateTo]);
+
+  const { data: reportData } = useQuery({
+    queryKey: ["report-data", range, profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return null;
+      const { data, error } = await supabase
+        .from("work_orders")
+        .select("completed_at, responsible_name, qr_code:qr_codes(id_codigo, id_nome), service_type_rel:service_types(name), company_rel:companies(name)")
+        .eq("company_id", profile.company_id)
+        .gte("completed_at", range.from)
+        .lte("completed_at", range.to)
+        .order("completed_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!profile?.company_id,
+  });
+
+  const filtered = useMemo(() => {
+    if (!reportData) return [];
+    if (!search) return reportData;
+    const s = search.toLowerCase();
+    return reportData.filter((r: any) =>
+      (r.responsible_name || "").toLowerCase().includes(s) ||
+      (r.qr_code?.id_codigo || "").toLowerCase().includes(s) ||
+      (r.qr_code?.id_nome || "").toLowerCase().includes(s)
+    );
+  }, [reportData, search]);
+
+  const totalOs = filtered.length;
+  const days = useMemo(() => {
+    if (filtered.length === 0) return 1;
+    const dates = new Set(filtered.map((r: any) => new Date(r.completed_at).toDateString()));
+    return Math.max(dates.size, 1);
+  }, [filtered]);
+  const avgPerDay = (totalOs / days).toFixed(1);
+
+  const cabinData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of filtered as any[]) {
+      const qr = r.qr_code;
+      const name = qr ? `${qr.id_codigo} · ${qr.id_nome}` : "Sem cabine";
+      counts[name] = (counts[name] || 0) + 1;
+    }
+    return Object.entries(counts).map(([cabin, os]) => ({ cabin, os })).sort((a, b) => b.os - a.os).slice(0, 15);
+  }, [filtered]);
+
+  const employeeData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of filtered as any[]) {
+      const name = r.responsible_name || "Sem nome";
+      counts[name] = (counts[name] || 0) + 1;
+    }
+    return Object.entries(counts).map(([name, os]) => ({ name, os })).sort((a, b) => b.os - a.os);
+  }, [filtered]);
+
+  const hourData = useMemo(() => {
+    const hours = Array(24).fill(0);
+    for (const r of filtered as any[]) {
+      const h = new Date(r.completed_at).getHours();
+      hours[h]++;
+    }
+    return hours.map((count, i) => ({ hour: `${String(i).padStart(2, "0")}h`, os: count }));
+  }, [filtered]);
+
+  const topCabin = cabinData[0]?.cabin || "—";
+  const topEmployee = employeeData[0]?.name || "—";
+
+  const handleExportCsv = () => {
+    if (filtered.length === 0) return;
+    const header = "Data,Empresa,Funcionario,Cabine,Tipo Servico";
+    const rows = (filtered as any[]).map(r =>
+      `${formatDate(r.completed_at)},${r.company_rel?.name || ""},${r.responsible_name || ""},${r.qr_code?.id_codigo || ""} ${r.qr_code?.id_nome || ""},${r.service_type_rel?.name || ""}`.trim()
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `relatorio_${periodo.replace(/ /g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
   const statCards = [
-    { label: "Total OS Periodo", value: "1.248", subtitle: "Registros no periodo", icon: BarChart3, color: C.azul },
-    { label: "Media por Dia", value: "41.6", subtitle: "OS executadas/dia", icon: Calendar, color: C.verde },
-    { label: "Cabine Mais Limpa", value: "CABINE 07", subtitle: "Maior frequencia", icon: Trophy, color: C.primary },
-    { label: "Funcionario Destaque", value: "LENI", subtitle: "Maior produtividade", icon: User, color: C.roxo },
+    { label: "Total OS Periodo", value: totalOs.toLocaleString("pt-BR"), subtitle: `${days} dia(s) com OS`, icon: BarChart3, color: C.azul },
+    { label: "Media por Dia", value: avgPerDay, subtitle: "OS executadas/dia", icon: Calendar, color: C.verde },
+    { label: "Cabine Mais Atendida", value: topCabin.length > 18 ? topCabin.slice(0, 18) + "…" : topCabin, subtitle: `${cabinData[0]?.os || 0} OS`, icon: Trophy, color: C.primary },
+    { label: "Operador Destaque", value: topEmployee, subtitle: `${employeeData[0]?.os || 0} OS`, icon: User, color: C.roxo },
   ];
 
   const cardStyle = (d: boolean): React.CSSProperties => ({
@@ -95,7 +211,7 @@ export function ReportsPage() {
               </h2>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>Analise de desempenho e produtividade</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-                {[{ label: "Periodo", value: "1.248 OS", color: C.azul }, { label: "Media/Dia", value: "41.6", color: C.verde }].map(s => (
+                {[{ label: "Periodo", value: `${totalOs.toLocaleString("pt-BR")} OS`, color: C.azul }, { label: "Media/Dia", value: avgPerDay, color: C.verde }].map(s => (
                   <div key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color }} />
                     <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
@@ -122,7 +238,7 @@ export function ReportsPage() {
             }}>
               <div className="min-w-0">
                 <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: C.textMuted, display: "block", marginBottom: 3 }}>{card.label}</span>
-                <span style={{ fontSize: 24, fontWeight: 800, color: card.color, lineHeight: 1, display: "block" }}>{card.value}</span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: card.color, lineHeight: 1, display: "block" }}>{card.value}</span>
                 {card.subtitle && <span style={{ fontSize: 10, color: C.textMuted, display: "block", marginTop: 3 }}>{card.subtitle}</span>}
               </div>
               <div style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, background: `${card.color}0A`, border: `1px solid ${card.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -150,20 +266,20 @@ export function ReportsPage() {
             {search && <span onClick={e => { e.stopPropagation(); setSearch(""); }} style={{ cursor: "pointer", opacity: 0.6, display: "flex" }}><X className="h-[14px] w-[14px]" style={{ color: C.textMuted }} /></span>}
           </div>
 
-          {/* Periodo */}
+          {/* Periodo preset */}
           <div ref={periodoRef} style={{ position: "relative" }}>
             <button onClick={() => setShowPeriodo(!showPeriodo)} style={{ ...btnBase(showPeriodo), color: C.textBody }}>
               <Calendar className="h-[13px] w-[13px]" style={{ color: C.textMuted }} />
               <span style={{ color: C.textMuted }}>Periodo:</span>
-              <span style={{ fontWeight: 700, color: C.textTitle }}>{periodo}</span>
+              <span style={{ fontWeight: 700, color: C.textTitle }}>{dateFrom || dateTo ? "Personalizado" : periodo}</span>
               <ChevronDown className={cn("h-[10px] w-[10px] transition-transform", showPeriodo && "rotate-180")} style={{ color: showPeriodo ? C.primary : C.textMuted }} />
             </button>
             {showPeriodo && (
               <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 50, minWidth: 240, borderRadius: "8px 8px 8px 14px", background: C.cardBg, border: `1px solid ${C.cardBorder}`, boxShadow: "0 12px 36px rgba(0,0,0,0.18)", padding: "6px 0" }}>
                 {periodoOptions.map(opt => {
-                  const isA = periodo === opt;
+                  const isA = periodo === opt && !dateFrom && !dateTo;
                   return (
-                    <div key={opt} onClick={() => { setPeriodo(opt); setShowPeriodo(false); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", fontSize: 11, cursor: "pointer", fontWeight: isA ? 700 : 500, color: isA ? C.primary : C.textBody, background: isA ? `${C.primary}12` : "transparent" }}>
+                    <div key={opt} onClick={() => { setPeriodo(opt); setDateFrom(""); setDateTo(""); setShowPeriodo(false); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", fontSize: 11, cursor: "pointer", fontWeight: isA ? 700 : 500, color: isA ? C.primary : C.textBody, background: isA ? `${C.primary}12` : "transparent" }}>
                       <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isA ? C.primary : C.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}>{isA && <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.primary }} />}</div>
                       {opt}
                     </div>
@@ -173,13 +289,22 @@ export function ReportsPage() {
             )}
           </div>
 
+          {/* Date range inputs */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              style={{ height: 35, borderRadius: 8, border: `1.5px solid ${dark ? C.cardBorder : "#CBD5E1"}`, background: dark ? "transparent" : "#fff", color: C.textBody, padding: "0 10px", fontSize: 12, outline: "none" }} />
+            <span style={{ fontSize: 10, color: C.textMuted }}>ate</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              style={{ height: 35, borderRadius: 8, border: `1.5px solid ${dark ? C.cardBorder : "#CBD5E1"}`, background: dark ? "transparent" : "#fff", color: C.textBody, padding: "0 10px", fontSize: 12, outline: "none" }} />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, fontWeight: 600, color: C.vermelho, background: "none", border: "none", cursor: "pointer" }}>Limpar</button>
+            )}
+          </div>
+
           <div style={{ flex: 1 }} />
 
-          <button title="Exportar Excel" style={{ width: 34, height: 34, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.cardBorder}`, background: "transparent", color: "#1D6F42", cursor: "pointer" }}>
+          <button onClick={handleExportCsv} title="Exportar CSV" style={{ width: 34, height: 34, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.cardBorder}`, background: "transparent", color: "#1D6F42", cursor: "pointer" }}>
             <FileSpreadsheet className="h-4 w-4" />
-          </button>
-          <button title="Exportar PDF" style={{ width: 34, height: 34, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.cardBorder}`, background: "transparent", color: C.vermelho, cursor: "pointer" }}>
-            <FileText className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -197,7 +322,7 @@ export function ReportsPage() {
             </div>
           </div>
           <div style={{ padding: "12px 12px 16px" }}>
-            <OsByCabinChart />
+            <OsByCabinChart data={cabinData} />
           </div>
         </div>
 
@@ -205,14 +330,14 @@ export function ReportsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 0" }}>
             <div>
               <span style={{ fontSize: 13, fontWeight: 700, color: C.textTitle, display: "block" }}>OS por Funcionario</span>
-              <span style={{ fontSize: 10, color: C.textMuted }}>Produtividade por tipo</span>
+              <span style={{ fontSize: 10, color: C.textMuted }}>Produtividade no periodo</span>
             </div>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: `${C.verde}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <User className="h-[14px] w-[14px]" style={{ color: C.verde }} />
             </div>
           </div>
           <div style={{ padding: "12px 12px 16px" }}>
-            <OsByEmployeeChart />
+            <OsByEmployeeChart data={employeeData} />
           </div>
         </div>
       </div>
@@ -228,7 +353,7 @@ export function ReportsPage() {
           </div>
         </div>
         <div style={{ padding: "12px 12px 16px" }}>
-          <OsByTimeChart />
+          <OsByTimeChart data={hourData} />
         </div>
       </div>
     </div>

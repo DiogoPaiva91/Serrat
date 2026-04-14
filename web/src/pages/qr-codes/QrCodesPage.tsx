@@ -12,6 +12,7 @@ import { QrCodeForm } from "@/components/forms/QrCodeForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { QrCodePreviewModal } from "@/components/shared/QrCodePreviewModal";
 import { useQrCodes } from "@/hooks/useQrCodes";
+import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ export function QrCodesPage() {
   const dark = theme === "dark";
   const C = dark ? DARK : LIGHT;
   const { data: qrCodes, isLoading, createMutation, updateMutation, deleteMutation } = useQrCodes();
+  useRealtimeTable("qr_codes", "qr-codes");
 
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);

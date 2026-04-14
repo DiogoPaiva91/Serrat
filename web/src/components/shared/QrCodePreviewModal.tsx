@@ -142,7 +142,7 @@ export function QrCodePreviewModal({ open, onOpenChange, qrData }: QrCodePreview
 
   if (!qrData) return null;
 
-  const qrValue = `${qrData.idCodigo}|${qrData.idNome}`;
+  const qrValue = `${qrData.idCodigo}@${qrData.idNome}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
