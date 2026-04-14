@@ -3,7 +3,7 @@ import {
   Users, Plus, Search, Pencil, Filter, X, Calendar, ChevronDown,
   Inbox, ChevronLeft, ChevronRight, List, Grid3x3, Settings,
   Columns3, Rows3, LayoutGrid, GripVertical, Check, ChevronUp, ChevronsUpDown,
-  FileSpreadsheet, FileText, Trash2, Power,
+  FileSpreadsheet, FileText, Trash2, Power, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +55,7 @@ const ALL_COLUMNS = [
   { id: "telefone", label: "Telefone", width: "15%" },
   { id: "funcao", label: "Perfil", width: "15%" },
   { id: "status", label: "Status", width: "10%" },
-  { id: "acoes", label: "Acoes", fixed: true, width: "120px", align: "center" as const },
+  { id: "acoes", label: "Acoes", fixed: true, width: "160px", align: "center" as const },
 ];
 
 type Density = "compact" | "normal" | "comfortable";
@@ -158,6 +158,7 @@ export function EmployeesPage() {
           role: data.role,
           company_id: data.company_id || profile?.company_id,
           email: data.email,
+          must_change_password: true,
         }).eq("id", authData.user.id);
         if (profErr) throw profErr;
       }
@@ -196,6 +197,30 @@ export function EmployeesPage() {
       toast.success(`Usuario ${!emp.is_active ? "ativado" : "desativado"}`);
       refetch();
     } catch (err: any) { toast.error(err.message || "Erro ao alterar status"); }
+  };
+
+  const handleResetPassword = async (emp: any) => {
+    const newPwd = prompt(`Nova senha temporaria para ${emp.full_name}:\n(minimo 6 caracteres — usuario sera forcado a trocar no proximo login)`);
+    if (!newPwd) return;
+    if (newPwd.length < 6) { toast.error("Senha minima 6 caracteres"); return; }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { toast.error("Sessao expirada — faca login novamente"); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ user_id: emp.id, new_password: newPwd }),
+      });
+      console.log("[ResetPassword] status:", res.status);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao alterar senha");
+      toast.success(`Senha de ${emp.full_name} alterada!`);
+    } catch (err: any) { toast.error(err.message || "Erro"); }
   };
 
   const handleDelete = async (emp: any) => {
@@ -464,6 +489,9 @@ export function EmployeesPage() {
                           <div style={{ display: "inline-flex", gap: 4, justifyContent: "center" }}>
                             <button onClick={(e) => { e.stopPropagation(); setEditingItem(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${C.verde}30`, background: `${C.verde}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: C.verde, flexShrink: 0 }} title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleResetPassword(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${C.azul}30`, background: `${C.azul}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: C.azul, flexShrink: 0 }} title="Redefinir senha (envia email)">
+                              <KeyRound className="h-3.5 w-3.5" />
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); handleToggleStatus(emp); }} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${(emp.is_active ? C.laranja : C.verde)}30`, background: `${(emp.is_active ? C.laranja : C.verde)}08`, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: emp.is_active ? C.laranja : C.verde, flexShrink: 0 }} title={emp.is_active ? "Desativar" : "Ativar"}>
                               <Power className="h-3.5 w-3.5" />

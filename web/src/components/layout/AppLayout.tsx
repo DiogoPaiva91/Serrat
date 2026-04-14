@@ -16,7 +16,7 @@ export function AppLayout() {
   const [pwdDone, setPwdDone] = useState(false);
   const sidebarWidth = collapsed ? (sidebarHovering ? 230 : 72) : 230;
 
-  const mustChangePwd = false; // disabled until column exists
+  const mustChangePwd = !!profile?.must_change_password && !pwdDone;
 
   return (
     <SidebarCollapseContext.Provider value={{ collapsed, setCollapsed }}>
