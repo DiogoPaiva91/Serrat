@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  serrat:
+    image: serrat-web:latest
+    deploy:
+      replicas: 1
+      labels:
+        traefik.enable: "true"
+
+        traefik.http.routers.serrat.rule: "Host(`serrat.operation.app.br`)"
+        traefik.http.routers.serrat.entrypoints: "websecure"
+        traefik.http.routers.serrat.tls: "true"
+        traefik.http.routers.serrat.tls.certresolver: "letsencryptresolver"
+        traefik.http.routers.serrat.service: "serrat"
+
+        traefik.http.services.serrat.loadbalancer.server.port: "80"
+    networks:
+      - NookNet
+
+networks:
+  NookNet:
+    external: true
