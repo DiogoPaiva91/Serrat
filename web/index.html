@@ -26,10 +26,18 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Service worker so no build. No dev server ele guardava os modulos do Vite (e ate
+      // paginas de outro app que roda na mesma porta) e servia a copia velha: tela em branco.
+      // Em dev, desliga o que tiver ficado registrado de antes.
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
-        });
+        if ("%PROD%" === "true") {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+          });
+        } else {
+          navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+          if (window.caches) caches.keys().then((ks) => ks.filter((k) => k.startsWith("serrat-operador")).forEach((k) => caches.delete(k)));
+        }
       }
     </script>
   </body>
