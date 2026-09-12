@@ -7,8 +7,8 @@ export const ROUTES = {
   EMPLOYEES: "/funcionarios",
   COMPANIES: "/empresas",
   SERVICE_TYPES: "/tipos-de-servico",
+  CHECKLISTS: "/checklists",
   REPORTS: "/relatorios",
-  SYNC: "/sincronizacao",
 } as const;
 
 export const PAGE_SIZE = 20;
@@ -20,6 +20,6 @@ export const NAV_ITEMS = [
   { path: ROUTES.EMPLOYEES, label: "Funcionarios", icon: "Users" },
   { path: ROUTES.COMPANIES, label: "Empresas", icon: "Building2" },
   { path: ROUTES.SERVICE_TYPES, label: "Tipos de Serviço", icon: "Wrench" },
+  { path: ROUTES.CHECKLISTS, label: "Checklists", icon: "ListChecks" },
   { path: ROUTES.REPORTS, label: "Relatorios", icon: "BarChart3" },
-  { path: ROUTES.SYNC, label: "Sincronizacao", icon: "CloudDownload" },
 ] as const;

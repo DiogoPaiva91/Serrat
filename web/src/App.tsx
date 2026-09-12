@@ -13,7 +13,7 @@ import { EmployeesPage } from "@/pages/employees/EmployeesPage";
 import { CompaniesPage } from "@/pages/companies/CompaniesPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
 import { TiposDeServicoPage } from "@/pages/tipos-de-servico/TiposDeServicoPage";
-import { SincronizacaoPage } from "@/pages/sincronizacao/SincronizacaoPage";
+import { ChecklistsPage } from "@/pages/checklists/ChecklistsPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { ROUTES } from "@/lib/constants";
 import { OperadorLayout } from "@/pages/operador/OperadorLayout";
@@ -64,8 +64,8 @@ function AppRoutes() {
         <Route path="funcionarios" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
         <Route path="empresas" element={<AdminRoute><CompaniesPage /></AdminRoute>} />
         <Route path="tipos-de-servico" element={<TiposDeServicoPage />} />
+        <Route path="checklists" element={<AdminRoute><ChecklistsPage /></AdminRoute>} />
         {/* Relatórios integrado ao Dashboard */}
-        <Route path="sincronizacao" element={<AdminRoute><SincronizacaoPage /></AdminRoute>} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       {/* Operador PWA - sem login */}
