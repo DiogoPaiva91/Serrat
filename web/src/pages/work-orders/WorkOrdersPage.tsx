@@ -37,6 +37,22 @@ const DARK = {
 
 const cardRadius = "10px 10px 10px 18px";
 
+/* ═══ BOTAO (padrao DS-FIPS) ═══ */
+/* buttonVariants({ variant: "outline", size: "sm" }) do @fips-app/ds-fips 0.12.5:
+   rounded-md (--radius-md .375rem = 6px), border-[1.5px], h-[30px], px-3.5, text-[12px]/font-semibold,
+   tracking-[0.01em], gap-[7px], [&_svg]:size-3.5 (14px), transition 200ms ease-out,
+   active:scale-[0.97] (aplicado pela classe .ds-btn).
+   Unica troca: onde o DS usa var(--color-primary) (azul FIPS) fica o accent do Serrat. */
+export const dsButton = (active: boolean, C: { primary: string; cardBorder: string; textBody: string }, dark: boolean): React.CSSProperties => ({
+  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+  height: 30, padding: "0 14px", borderRadius: 6, whiteSpace: "nowrap",
+  fontSize: 12, fontWeight: 600, letterSpacing: "0.01em",
+  border: `1.5px solid ${active ? C.primary : (dark ? C.cardBorder : "#CBD5E1")}`,
+  background: active ? `${C.primary}12` : "transparent",
+  color: active ? C.primary : C.textBody,
+  cursor: "pointer", transition: "all 200ms ease-out",
+});
+
 /* ═══ ICONS ═══ */
 const Ic = {
   clipboard: (s: number, c: string) => <svg width={s} height={s} viewBox="0 0 20 20" fill="none"><rect x="5" y="1" width="10" height="3" rx="1" stroke={c} strokeWidth="1.4"/><rect x="3" y="3" width="14" height="15" rx="2" stroke={c} strokeWidth="1.4"/><path d="M7 9h6M7 12h4" stroke={c} strokeWidth="1.3" strokeLinecap="round"/></svg>,
@@ -48,6 +64,7 @@ export function WorkOrdersPage() {
   const { isAdmin } = useAuth();
   const dark = theme === "dark";
   const C = dark ? DARK : LIGHT;
+  const btnBase = (active: boolean) => dsButton(active, C, dark);
 
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -103,7 +120,7 @@ export function WorkOrdersPage() {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: C.textBody }} className="space-y-5">
-      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.ds-btn:active{transform:scale(0.97)}`}</style>
 
       {/* ═══ HERO ═══ */}
       <div style={{
@@ -137,21 +154,21 @@ export function WorkOrdersPage() {
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>
                 Registro completo de todas as ordens de servico executadas
               </p>
-              {/* Stats pills */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-                {heroStats.map((s) => (
-                  <div key={s.label} style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    padding: "3px 10px", borderRadius: 20,
-                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color }} />
-                    <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.value}</span>
-                  </div>
-                ))}
-              </div>
             </div>
+          </div>
+          {/* Stats pills */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {heroStats.map((s) => (
+              <div key={s.label} style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "3px 10px", borderRadius: 20,
+                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color }} />
+                <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -170,16 +187,10 @@ export function WorkOrdersPage() {
           <div ref={filterRef} style={{ position: "relative" }}>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "7px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-                border: `1.5px solid ${activeFilters > 0 ? C.primary : (dark ? C.cardBorder : "#CBD5E1")}`,
-                background: activeFilters > 0 ? `${C.primary}12` : "transparent",
-                color: activeFilters > 0 ? C.primary : C.textBody,
-                cursor: "pointer", transition: "all .15s",
-              }}
+              className="ds-btn"
+              style={btnBase(activeFilters > 0)}
             >
-              <Filter className="h-[13px] w-[13px]" />
+              <Filter className="h-3.5 w-3.5" />
               Filtros
               {activeFilters > 0 && (
                 <span style={{ background: C.primary, color: "#1a1a1a", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>{activeFilters}</span>
@@ -251,15 +262,10 @@ export function WorkOrdersPage() {
           <div ref={periodoRef} style={{ position: "relative" }}>
             <button
               onClick={() => setShowPeriodo(!showPeriodo)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "7px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-                border: `1.5px solid ${showPeriodo ? C.primary : (dark ? C.cardBorder : "#CBD5E1")}`,
-                background: "transparent", cursor: "pointer", transition: "all .15s",
-                color: C.textBody,
-              }}
+              className="ds-btn"
+              style={btnBase(showPeriodo)}
             >
-              <Calendar className="h-[13px] w-[13px]" style={{ color: C.textMuted }} />
+              <Calendar className="h-3.5 w-3.5" style={{ color: C.textMuted }} />
               <span style={{ color: C.textMuted }}>Periodo:</span>
               <span style={{ fontWeight: 700, color: C.textTitle }}>{periodo}</span>
               <ChevronDown className={cn("h-[10px] w-[10px] transition-transform", showPeriodo && "rotate-180")} style={{ color: showPeriodo ? C.primary : C.textMuted }} />
@@ -415,14 +421,7 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
   // Sorting is done server-side via Supabase query
   const sortedOrders = orders;
 
-  const btnBase = (active: boolean): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 6,
-    padding: "7px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-    border: `1.5px solid ${active ? C.primary : (dark ? C.cardBorder : "#CBD5E1")}`,
-    background: active ? `${C.primary}12` : "transparent",
-    color: active ? C.primary : C.textBody,
-    cursor: "pointer", transition: "all .15s",
-  });
+  const btnBase = (active: boolean) => dsButton(active, C, dark);
 
   const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
     display: "inline-flex", alignItems: "center", gap: 6,
@@ -516,7 +515,7 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
 
           {/* Configurar */}
           <div ref={configRef} style={{ position: "relative" }}>
-            <button onClick={() => setShowConfig(!showConfig)} style={btnBase(showConfig)}>
+            <button onClick={() => setShowConfig(!showConfig)} className="ds-btn" style={btnBase(showConfig)}>
               <Settings className="h-3.5 w-3.5" /> Configurar
             </button>
 
@@ -837,12 +836,12 @@ function TableSection({ dark, C, orders, isLoading, totalCount, totalPages, page
             {selected.size > 0 && ` · ${selected.size} selecionados`}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button disabled={page <= 1} onClick={() => setPage(page - 1)}
+            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="ds-btn"
               style={{ ...btnBase(false), opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}>
               <ChevronLeft className="h-3.5 w-3.5" /> Anterior
             </button>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, padding: "0 8px" }}>{page}</span>
-            <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}
+            <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="ds-btn"
               style={{ ...btnBase(false), opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}>
               Proximo <ChevronRight className="h-3.5 w-3.5" />
             </button>

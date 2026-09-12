@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { scopeQuery } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/providers/AuthProvider";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 import { ClipboardCheck } from "lucide-react";
@@ -22,19 +23,21 @@ export function ActivityFeed() {
   useRealtimeTable("work_orders", "activity-feed");
 
   const { data: activities } = useQuery({
-    queryKey: ["activity-feed", profile?.company_id],
+    queryKey: ["activity-feed", profile?.company_id, profile?.role],
     queryFn: async () => {
-      if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from("work_orders")
-        .select("id, completed_at, responsible_name, qr_code:qr_codes(id_codigo, id_nome), service_type_rel:service_types(name)")
-        .eq("company_id", profile.company_id)
-        .order("completed_at", { ascending: false })
-        .limit(10);
+      if (!profile) return [];
+      const { data, error } = await scopeQuery(
+        supabase
+          .from("work_orders")
+          .select("id, completed_at, responsible_name, qr_code:qr_codes(id_codigo, id_nome), service_type_rel:service_types(name)")
+          .order("completed_at", { ascending: false })
+          .limit(10),
+        profile,
+      );
       if (error) throw error;
       return data || [];
     },
-    enabled: !!profile?.company_id,
+    enabled: !!profile,
   });
 
   return (

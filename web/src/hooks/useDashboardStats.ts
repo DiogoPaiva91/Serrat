@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/AuthProvider";
 
 // Helper: aplica filtro de empresa para consultor; admin vê tudo
-function scopeQuery(query: any, profile: any) {
+export function scopeQuery(query: any, profile: any) {
   if (profile?.role !== "admin" && profile?.company_id) {
     return query.eq("company_id", profile.company_id);
   }

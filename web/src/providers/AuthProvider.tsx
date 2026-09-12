@@ -69,9 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // O perfil precisa chegar ANTES de loading virar false: o AdminRoute le isAdmin
+    // assim que loading cai, e com profile ainda nulo ele expulsa para o Dashboard
+    // em todo F5 dado numa rota de admin.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) await fetchProfile(session.user.id);
       setLoading(false);
     });
 

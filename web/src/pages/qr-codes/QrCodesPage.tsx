@@ -192,24 +192,26 @@ export function QrCodesPage() {
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>
                 Cadastro e gerenciamento de cabines e pontos de servico
               </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-                {heroStats.map(s => (
-                  <div key={s.label} style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    padding: "3px 10px", borderRadius: 20,
-                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color }} />
-                    <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.value}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
-          <Button onClick={() => setFormOpen(true)} className="shrink-0 border-white/20 text-white hover:bg-white/10 bg-white/[0.08]" variant="outline">
-            <Plus className="h-4 w-4" /> Adicionar
-          </Button>
+          <div className="flex shrink-0 items-center gap-3">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {heroStats.map(s => (
+                <div key={s.label} style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "3px 10px", borderRadius: 20,
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color }} />
+                  <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+            <Button onClick={() => setFormOpen(true)} className="shrink-0 border-white/20 text-white hover:bg-white/10 bg-white/[0.08]" variant="outline">
+              <Plus className="h-4 w-4" /> Adicionar
+            </Button>
+          </div>
         </div>
       </div>
 
