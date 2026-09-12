@@ -23,7 +23,7 @@ export function CompaniesPage() {
 
   const handleCreate = (data: any) => {
     createMutation.mutate(
-      { name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo },
+      { name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo, logo_url: data.logoUrl || null },
       { onSuccess: () => toast.success("Empresa criada!"), onError: (e: any) => toast.error(e.message) }
     );
   };
@@ -31,7 +31,7 @@ export function CompaniesPage() {
   const handleEdit = (data: any) => {
     if (!editingItem) return;
     updateMutation.mutate(
-      { id: editingItem.id, name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo },
+      { id: editingItem.id, name: data.name, cnpj: data.cnpj, address: data.address, city: data.city, state: data.state, phone: data.phone, email: data.email, contract_info: data.contractInfo, logo_url: data.logoUrl || null },
       { onSuccess: () => { toast.success("Empresa atualizada!"); setEditingItem(null); }, onError: (e: any) => toast.error(e.message) }
     );
   };
@@ -60,8 +60,12 @@ export function CompaniesPage() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <Building2 className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
+                      {company.logo_url ? (
+                        <img src={company.logo_url} alt={company.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <Building2 className="h-6 w-6 text-blue-600" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-bold text-foreground">{company.name}</h3>
@@ -106,7 +110,8 @@ export function CompaniesPage() {
       <CompanyForm
         open={!!editingItem}
         onOpenChange={(open) => !open && setEditingItem(null)}
-        initialData={editingItem ? { name: editingItem.name, cnpj: editingItem.cnpj || "", address: editingItem.address || "", city: editingItem.city || "", state: editingItem.state || "", phone: editingItem.phone || "", email: editingItem.email || "", contractInfo: editingItem.contract_info || "" } : null}
+        companyId={editingItem?.id}
+        initialData={editingItem ? { name: editingItem.name, cnpj: editingItem.cnpj || "", address: editingItem.address || "", city: editingItem.city || "", state: editingItem.state || "", phone: editingItem.phone || "", email: editingItem.email || "", contractInfo: editingItem.contract_info || "", logoUrl: editingItem.logo_url || "" } : null}
         onSubmit={handleEdit}
       />
     </div>

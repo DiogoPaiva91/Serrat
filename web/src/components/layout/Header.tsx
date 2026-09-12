@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, Moon, Sun, PanelLeft, User, LogOut } from "lucide-react";
+import { Bell, Moon, Sun, PanelLeft, User, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -145,25 +145,6 @@ export function Header() {
           </h1>
         </div>
 
-        {/* Center — search */}
-        <div className="relative hidden md:block w-full max-w-xs">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2"
-            style={{ color: dark ? "#9CA3AF" : "#737373" }}
-            strokeWidth={1.75}
-          />
-          <input
-            type="search"
-            placeholder="Buscar..."
-            aria-label="Buscar"
-            className={cn(
-              "h-[35px] w-full rounded-lg py-0 pl-9 pr-3 font-sans text-[13px] leading-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0",
-              dark
-                ? "border border-[#3F3F46] bg-[#141416] text-[#E2E2E8] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-[#71717A] focus-visible:border-primary/50 focus-visible:ring-primary/20"
-                : "border border-black/[0.10] bg-white text-neutral-800 shadow-[0_1px_2px_rgba(0,0,0,0.04)] placeholder:text-neutral-500 focus-visible:border-[#a3a3a3] focus-visible:ring-[#2563EB]/20"
-            )}
-          />
-        </div>
 
         {/* Right — icons + user */}
         <div className="hidden shrink-0 items-center gap-2 sm:flex">

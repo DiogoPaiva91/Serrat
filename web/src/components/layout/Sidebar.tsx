@@ -8,9 +8,9 @@ import {
   Users,
   Building2,
   Wrench,
+  ListChecks,
   BarChart3,
   Smartphone,
-  CloudDownload,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, type ElementType } from "react";
 import { createPortal } from "react-dom";
@@ -37,13 +37,13 @@ const NAV_ITEMS: MenuItem[] = [
   { icon: Users, label: "Usuarios", href: ROUTES.EMPLOYEES, adminOnly: true },
   { icon: Building2, label: "Empresas", href: ROUTES.COMPANIES, adminOnly: true },
   { icon: Wrench, label: "Tipos de Serviço", href: ROUTES.SERVICE_TYPES },
-  { icon: CloudDownload, label: "Sincronizacao", href: ROUTES.SYNC, adminOnly: true },
+  { icon: ListChecks, label: "Checklists", href: ROUTES.CHECKLISTS, adminOnly: true },
   { icon: Smartphone, label: "Operador", href: "/operador/scanner", external: true, adminOnly: true },
 ];
 
 /* ─── Neumorphic tokens ─── */
 const W_FULL = 230;
-const W_MINI = 72;
+const W_MINI = 62;
 
 const TILE_DARK = {
   borderIdle: "#3f3f46",

@@ -20,7 +20,7 @@ export function useCompanies() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (values: { name: string; cnpj?: string; address?: string; city?: string; state?: string; phone?: string; email?: string; contract_info?: string }) => {
+    mutationFn: async (values: { name: string; cnpj?: string; address?: string; city?: string; state?: string; phone?: string; email?: string; contract_info?: string; logo_url?: string | null }) => {
       const { data, error } = await supabase.from("companies").insert(values).select().single();
       if (error) throw error;
       return data;
@@ -29,7 +29,7 @@ export function useCompanies() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...values }: { id: string; name: string; cnpj?: string; address?: string; city?: string; state?: string; phone?: string; email?: string; contract_info?: string }) => {
+    mutationFn: async ({ id, ...values }: { id: string; name: string; cnpj?: string; address?: string; city?: string; state?: string; phone?: string; email?: string; contract_info?: string; logo_url?: string | null }) => {
       const { data, error } = await supabase.from("companies").update(values).eq("id", id).select().single();
       if (error) throw error;
       return data;

@@ -146,7 +146,7 @@ export function DashboardPage() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!profile?.company_id,
+    enabled: !!profile,
   });
 
   const filtered = useMemo(() => {
@@ -414,7 +414,7 @@ export function DashboardPage() {
     boxShadow: dark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
   });
 
-  const userName = profile?.full_name?.split(" ")[0] || "Admin";
+
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: C.textBody }}>
@@ -450,22 +450,11 @@ export function DashboardPage() {
               {Ic.chart(24, C.primary)}
             </div>
             <div className="min-w-0">
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                background: `${C.primary}20`, border: `1px solid ${C.primary}55`,
-                borderRadius: 20, padding: "4px 12px",
-                fontSize: 10, fontWeight: 600, color: C.primary, marginBottom: 8,
-              }}>
-                Bem-vindo, {userName}
-              </div>
               <h2 style={{ fontSize: mob ? 20 : 22, fontWeight: 800, color: "#fff", lineHeight: 1.2, margin: 0 }}>
                 Painel <span style={{ color: C.primary }}>Operacional</span>
               </h2>
               <p style={{ fontSize: mob ? 12 : 13, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>
                 Serrat · Gestao de Ordens de Servico · {s.os_month} OS este mes
-              </p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.30)", marginTop: 4 }}>
-                {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
           </div>
